@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist >
+  <schema id="org.gnome.shell.extensions.chronos" path="/org/gnome/shell/extensions/chronos/">
+    <key name="state-counted-time" type="u">
+      <default>0</default>
+      <summary>Start time</summary>
+      <description>Used to store counted time</description>
+    </key>
+    <key name="state-pause-start-time" type="u">
+      <default>0</default>
+      <summary>Pause start time</summary>
+      <description>Used to store pause start time</description>
+    </key>
+    <key name="state-paused" type="b">
+      <default>false</default>
+      <summary>Pause state indicator</summary>
+      <description>Shows if extension is in paused state</description>
+    </key>
+    <key name="pref-track-destroyed" type="b">
+      <default>true</default>
+      <summary>Pause time tracking while plugin is not active</summary>
+      <description>Stop time tracking when screen is locked, hibernated, shutdown
+        or any other case when plugin is not active</description>
+    </key>
+    <key name="pref-show-seconds" type="b">
+      <default>false</default>
+      <summary>Show seconds</summary>
+      <description>Set to true to show seconds on indicator</description>
+    </key>
+    <key name="pref-log-change-state" type="b">
+      <default>false</default>
+      <summary>Logging</summary>
+      <description>Log changes of time tracker state</description>
+    </key>
+    <key name="pref-start-on-reset" type="b">
+      <default>false</default>
+      <summary>Start on restart</summary>
+      <description>Start tracker when restart timer</description>
+    </key>
+    <key name="pref-indicator-color" type="s">
+      <default>'rgb(51, 209, 122)'</default>
+      <summary>Indicator color</summary>
+      <description>Color of the indicator label</description>
+    </key>
+    <key name="pref-indicator-paused-color" type="s">
+      <default>'rgb(237, 51, 59)'</default>
+      <summary>Paused indicator color</summary>
+      <description>Color of the indicator label in paused state</description>
+    </key>
+  </schema>
+</schemalist>

@@ -1,0 +1,10 @@
+{
+  "name": "Chronos Time Tracker",
+  "description": "Time tracker tool",
+  "settings-schema": "org.gnome.shell.extensions.chronos",
+  "uuid": "chronos@time-tracker.com",
+  "shell-version": [
+    "45"
+  ],
+  "version": 1
+}

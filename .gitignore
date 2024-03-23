@@ -1,0 +1,7 @@
+#komodo project
+*.komodoproject
+
+#gedit backups
+*.*~
+
+chronos@time-tracker.com.shell-extension.zip
