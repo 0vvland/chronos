@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Chronos\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-23 17:38+0300\n"
+"POT-Creation-Date: 2024-03-24 10:25+0300\n"
 "PO-Revision-Date: 2024-03-23 14:15+0300\n"
 "Last-Translator: <0vvland@gmail.com>\n"
 "Language-Team: <0vvland@gmail.com>\n"
@@ -19,9 +19,9 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: source/extension.js:42 source/extension.js:83
+#: source/extension.js:42 source/extension.js:84
 msgid "Resume"
-msgstr ""
+msgstr "Продолжить"
 
 #: source/extension.js:46
 msgid "Restart"
@@ -31,7 +31,7 @@ msgstr "Сброс"
 msgid "Preferences"
 msgstr "Настройки"
 
-#: source/extension.js:83
+#: source/extension.js:84
 msgid "Pause"
 msgstr "Пауза"
 
@@ -65,30 +65,30 @@ msgstr "Отображение"
 msgid "Show seconds"
 msgstr "Показывать секунды"
 
-#: source/prefs.js:97
+#: source/prefs.js:95
 msgid "Colours"
 msgstr "Цвета"
 
-#: source/prefs.js:109
+#: source/prefs.js:107
 msgid "Normal state"
 msgstr "Нормальный"
 
-#: source/prefs.js:128
+#: source/prefs.js:126
 msgid "Paused state"
 msgstr "Пауза"
 
-#: source/prefs.js:156
+#: source/prefs.js:154
 msgid "Behavior"
 msgstr "Поведение"
 
-#: source/prefs.js:165
+#: source/prefs.js:163
 msgid "Pause while screen locked (and other inactive states)"
 msgstr "Пауза при блокеровке (и других случаях неактивности)"
 
-#: source/prefs.js:180
+#: source/prefs.js:176
 msgid "Log changes of time tracker state"
 msgstr "Вести лог изменений состояния трекера"
 
-#: source/prefs.js:193
+#: source/prefs.js:189
 msgid "Start tracker when restart timer"
 msgstr "Запускать трекер при сбросе"

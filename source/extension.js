@@ -68,6 +68,7 @@ const Chronos = GObject.registerClass(
 
       if (!this._settings.get_boolean('state-paused')) {
         this.onResume();
+        this._settings.set_boolean('state-paused', false);
       }
 
       this._timeout = GLib.timeout_add(1000, GLib.PRIORITY_LOW, this.refreshIndicatorLabel.bind(this));
@@ -90,29 +91,31 @@ const Chronos = GObject.registerClass(
     }
 
     getTrackedTime () {
-      let countedTime = this._settings.get_uint('state-counted-time');
-      if (this._startTime) {
+      let trackedTime = this._settings.get_int('state-tracked-time');
+      if (!this.isPaused) {
         const extraCountedTime = getUintTime() - this._startTime;
         if (extraCountedTime > 60 * 5) {
           this.storeCountedTime();
         }
-        countedTime += extraCountedTime;
+        trackedTime += extraCountedTime;
       }
-      const hours = Math.floor(countedTime / 3600);
+      const isNegative = trackedTime < 0;
+      trackedTime = Math.abs(trackedTime)
+      const hours = Math.floor(trackedTime / 3600);
       if (hours !== 0) {
-        countedTime -= hours * 3600;
+        trackedTime -= hours * 3600;
       }
-      const mins = Math.floor(countedTime / 60);
+      const mins = Math.floor(trackedTime / 60);
       if (mins !== 0) {
-        countedTime -= mins * 60;
+        trackedTime -= mins * 60;
       }
       let timer;
       if (this._settings.get_boolean('pref-show-seconds') === true) {
-        timer = '%d:%02d:%02d'.format(hours, mins, countedTime);
+        timer = '%d:%02d:%02d'.format(hours, mins, trackedTime);
       } else {
         timer = '%d:%02d'.format(hours, mins);
       }
-      return timer;
+      return isNegative ? '-'+timer : timer;
     }
 
     refreshIndicatorLabel() {
@@ -121,14 +124,14 @@ const Chronos = GObject.registerClass(
     }
 
     storeCountedTime() {
-      if (this._startTime === null) {
+      if (this.isPaused) {
         return;
       }
-      const countedTime = this._settings.get_uint('state-counted-time');
+      const countedTime = this._settings.get_int('state-tracked-time');
       const now = getUintTime();
       const extraCountedTime = now - this._startTime;
       this._startTime = now;
-      this._settings.set_uint('state-counted-time', countedTime + extraCountedTime);
+      this._settings.set_int('state-tracked-time', countedTime + extraCountedTime);
     }
 
     onToggle () {
@@ -160,8 +163,8 @@ const Chronos = GObject.registerClass(
 
     onReset () {
       this.log('reset');
-      this._settings.set_uint('state-counted-time', 0);
-      if (this._settings.get_boolean('pref-start-on-reset')) {
+      this._settings.set_int('state-tracked-time', 0);
+      if (!this.isPaused || this._settings.get_boolean('pref-start-on-reset')) {
         this._startTime = getUintTime();
       }
       this.updateIndicatorStyle();
@@ -185,7 +188,7 @@ const Chronos = GObject.registerClass(
       this.storeCountedTime();
       if (this.isPaused) {
         this._settings.set_boolean('state-paused', true);
-      } else if (this._settings.get_boolean('pref-track-destroyed')) {
+      } else if (!this._settings.get_boolean('pref-pause-on-destroy')) {
         this._settings.set_uint('state-pause-start-time', getUintTime());
       }
       this.log('destroy');

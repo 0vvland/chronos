@@ -20,7 +20,7 @@ const AdjustTimePage = GObject.registerClass(
         name: 'ChronosAdjustTimePrefPage',
       });
       this.settings = settings;
-      this.initialTrackedTime = settings.get_uint('state-counted-time');
+      this.initialTrackedTime = settings.get_int('state-tracked-time');
 
       const groupAdjustStartTime = new Adw.PreferencesGroup({
         title: _('Adjust tracked time'),
@@ -61,7 +61,7 @@ const AdjustTimePage = GObject.registerClass(
       const hours = this.spinHours.get_value();
       const mins = this.spinMin.get_value();
       const change = hours * 60 * 60 + mins * 60;
-      this.settings.set_uint('state-counted-time',
+      this.settings.set_int('state-tracked-time',
         this.initialTrackedTime + change);
     }
   },
@@ -84,12 +84,10 @@ const AppearancePage = GObject.registerClass(
 
       const switchShowSeconds = new Adw.SwitchRow({
         title: _('Show seconds'),
-        active: this.settings.get_boolean('pref-show-seconds'),
       });
 
-      switchShowSeconds.connect('notify::active', (state) => {
-        this.settings.set_boolean('pref-show-seconds', state.active);
-      });
+      this.settings.bind('pref-show-seconds', switchShowSeconds, 'active',
+        Gio.SettingsBindFlags.DEFAULT);
 
       groupDisplay.add(switchShowSeconds);
 
@@ -163,12 +161,10 @@ const BehaviorPage = GObject.registerClass(
 
       const switchPauseOnLock = new Adw.SwitchRow({
         title: _('Pause while screen locked (and other inactive states)'),
-        active: this.settings.get_boolean('pref-track-destroyed'),
       });
 
-      switchPauseOnLock.connect('notify::active', (state) => {
-        this.settings.set_boolean('pref-track-destroyed', state.active);
-      });
+      this.settings.bind('pref-pause-on-destroy', switchPauseOnLock, 'active',
+        Gio.SettingsBindFlags.DEFAULT);
 
       groupOnLock.add(switchPauseOnLock);
 

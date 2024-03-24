@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Gnome Shell Extension Chronos\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-23 17:38+0300\n"
+"POT-Creation-Date: 2024-03-24 10:25+0300\n"
 "PO-Revision-Date: 2014-10-17 14:14+0300\n"
 "Last-Translator: \n"
 "Language-Team:  \n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: source/extension.js:42 source/extension.js:83
+#: source/extension.js:42 source/extension.js:84
 msgid "Resume"
 msgstr ""
 
@@ -28,7 +28,7 @@ msgstr ""
 msgid "Preferences"
 msgstr ""
 
-#: source/extension.js:83
+#: source/extension.js:84
 msgid "Pause"
 msgstr ""
 
@@ -60,30 +60,30 @@ msgstr ""
 msgid "Show seconds"
 msgstr ""
 
-#: source/prefs.js:97
+#: source/prefs.js:95
 msgid "Colours"
 msgstr ""
 
-#: source/prefs.js:109
+#: source/prefs.js:107
 msgid "Normal state"
 msgstr ""
 
-#: source/prefs.js:128
+#: source/prefs.js:126
 msgid "Paused state"
 msgstr ""
 
-#: source/prefs.js:156
+#: source/prefs.js:154
 msgid "Behavior"
 msgstr ""
 
-#: source/prefs.js:165
+#: source/prefs.js:163
 msgid "Pause while screen locked (and other inactive states)"
 msgstr ""
 
-#: source/prefs.js:180
+#: source/prefs.js:176
 msgid "Log changes of time tracker state"
 msgstr ""
 
-#: source/prefs.js:193
+#: source/prefs.js:189
 msgid "Start tracker when restart timer"
 msgstr ""
