@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Chronos\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-24 10:25+0300\n"
+"POT-Creation-Date: 2024-03-25 08:24+0300\n"
 "PO-Revision-Date: 2024-03-23 14:15+0300\n"
 "Last-Translator: <0vvland@gmail.com>\n"
 "Language-Team: <0vvland@gmail.com>\n"
@@ -19,7 +19,7 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: source/extension.js:42 source/extension.js:84
+#: source/extension.js:42 source/extension.js:95
 msgid "Resume"
 msgstr "Продолжить"
 
@@ -31,7 +31,7 @@ msgstr "Сброс"
 msgid "Preferences"
 msgstr "Настройки"
 
-#: source/extension.js:84
+#: source/extension.js:95
 msgid "Pause"
 msgstr "Пауза"
 

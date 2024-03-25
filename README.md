@@ -20,10 +20,12 @@ Clone it to `~/.local/share/gnome-shell/extensions/chronos@time-tracker.com` and
 ## Plans (ToDo)
 ### Changes
 - flexible timer: no timer on pause, 1 min and 1 sec timer (depend on settings) - spare resources
-- negative/backward timer
+- better time selection in pref UI
 
 ### Extension
 - alert on not started timer: weekdays, time range, alert if not started for 15 min, allow to dismiss alert for next day
 - alert for brakes: if not paused for 1 h alert that need to take a brake
 - add about page
 - truncate log to limit size
+- reset to particular value
+- alarm on particular tracked time

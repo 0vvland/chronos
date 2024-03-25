@@ -54,16 +54,23 @@ const Chronos = GObject.registerClass(
 
       this._indicatorColors = [
         this._settings.get_string('pref-indicator-color'),
-        this._settings.get_string('pref-indicator-paused-color')
+        this._settings.get_string('pref-indicator-paused-color'),
       ];
-
 
       // null - if paused, timestamp when started if count
       this._startTime = null;
-      const storedStartTime = this._settings.get_uint('state-pause-start-time');
-      if (storedStartTime) {
-        this._startTime = storedStartTime;
-        this._settings.set_uint('state-pause-start-time', 0);
+      if (this._settings.get_boolean('state-paused')) {
+        this._settings.set_boolean('state-paused', false);
+      } else {
+        // not paused on destroy
+        const storedStartTime = this._settings.get_uint(
+          'state-pause-start-time');
+        if (storedStartTime) {
+          this._startTime = storedStartTime;
+          this._settings.set_uint('state-pause-start-time', 0);
+          this.storeCountedTime();
+          this.log('collect inactive time')
+        }
       }
 
       if (!this._settings.get_boolean('state-paused')) {
@@ -71,10 +78,14 @@ const Chronos = GObject.registerClass(
         this._settings.set_boolean('state-paused', false);
       }
 
-      this._timeout = GLib.timeout_add(1000, GLib.PRIORITY_LOW, this.refreshIndicatorLabel.bind(this));
-
+      this._timeout = GLib.timeout_add(1000, GLib.PRIORITY_LOW, () => {
+        if (getUintTime() - this._startTime > 60 * 5) {
+          this.storeCountedTime();
+        }
+        this.refreshIndicatorLabel();
+        return true;
+      });
       this.log('init');
-
       this.updateIndicatorStyle();
     }
 
@@ -82,7 +93,9 @@ const Chronos = GObject.registerClass(
       const indicatorColor = this._indicatorColors[this.isPaused ? 1 : 0];
       const menuColor = this._indicatorColors[this.isPaused ? 0 : 1];
       const menuLabel = this.isPaused ? _('Resume') : _('Pause');
-      const icon = this.isPaused ? 'media-playback-start-symbolic' : 'media-playback-pause-symbolic';
+      const icon = this.isPaused
+        ? 'media-playback-start-symbolic'
+        : 'media-playback-pause-symbolic';
 
       this._label.set_style(`color: ${indicatorColor};`);
       this._pauseMenu?.set_style(`color: ${menuColor};`);
@@ -94,13 +107,10 @@ const Chronos = GObject.registerClass(
       let trackedTime = this._settings.get_int('state-tracked-time');
       if (!this.isPaused) {
         const extraCountedTime = getUintTime() - this._startTime;
-        if (extraCountedTime > 60 * 5) {
-          this.storeCountedTime();
-        }
         trackedTime += extraCountedTime;
       }
       const isNegative = trackedTime < 0;
-      trackedTime = Math.abs(trackedTime)
+      trackedTime = Math.abs(trackedTime);
       const hours = Math.floor(trackedTime / 3600);
       if (hours !== 0) {
         trackedTime -= hours * 3600;
@@ -115,15 +125,14 @@ const Chronos = GObject.registerClass(
       } else {
         timer = '%d:%02d'.format(hours, mins);
       }
-      return isNegative ? '-'+timer : timer;
+      return isNegative ? '-' + timer : timer;
     }
 
-    refreshIndicatorLabel() {
+    refreshIndicatorLabel () {
       this._label.set_text(this.getTrackedTime());
-      return true;
     }
 
-    storeCountedTime() {
+    storeCountedTime () {
       if (this.isPaused) {
         return;
       }
@@ -131,14 +140,15 @@ const Chronos = GObject.registerClass(
       const now = getUintTime();
       const extraCountedTime = now - this._startTime;
       this._startTime = now;
-      this._settings.set_int('state-tracked-time', countedTime + extraCountedTime);
+      this._settings.set_int('state-tracked-time',
+        countedTime + extraCountedTime);
     }
 
     onToggle () {
       if (this.isPaused) {
-        this.onResume()
+        this.onResume();
       } else {
-        this.onPause()
+        this.onPause();
       }
     }
 
@@ -170,13 +180,15 @@ const Chronos = GObject.registerClass(
       this.updateIndicatorStyle();
     }
 
-    onChangeSettings(event) {
+    onChangeSettings (event) {
       // console.log('changed', data);
-      if (this._settings.get_string('pref-indicator-color') !== this._indicatorColors[0]
-      || this._settings.get_string('pref-indicator-paused-color') !== this._indicatorColors[1]) {
+      if (this._settings.get_string('pref-indicator-color') !==
+        this._indicatorColors[0]
+        || this._settings.get_string('pref-indicator-paused-color') !==
+        this._indicatorColors[1]) {
         this._indicatorColors = [
           this._settings.get_string('pref-indicator-color'),
-          this._settings.get_string('pref-indicator-paused-color')
+          this._settings.get_string('pref-indicator-paused-color'),
         ];
         this.updateIndicatorStyle();
       }
@@ -197,8 +209,6 @@ const Chronos = GObject.registerClass(
       }
       this?.destroy();
     }
-
-
 
     log (event) {
       if (!this._settings.get_boolean('pref-log-change-state')) {
