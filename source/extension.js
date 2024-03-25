@@ -69,7 +69,7 @@ const Chronos = GObject.registerClass(
           this._startTime = storedStartTime;
           this._settings.set_uint('state-pause-start-time', 0);
           this.storeCountedTime();
-          this.log('collect inactive time')
+          this.logging('collect inactive time');
         }
       }
 
@@ -85,7 +85,7 @@ const Chronos = GObject.registerClass(
         this.refreshIndicatorLabel();
         return true;
       });
-      this.log('init');
+      this.logging('init');
       this.updateIndicatorStyle();
     }
 
@@ -158,7 +158,7 @@ const Chronos = GObject.registerClass(
       }
       this.storeCountedTime();
       this._startTime = null;
-      this.log('pause');
+      this.logging('pause');
       this.updateIndicatorStyle();
     }
 
@@ -167,12 +167,12 @@ const Chronos = GObject.registerClass(
         return;
       }
       this._startTime = getUintTime();
-      this.log('resume');
+      this.logging('resume');
       this.updateIndicatorStyle();
     }
 
     onReset () {
-      this.log('reset');
+      this.logging('reset');
       this._settings.set_int('state-tracked-time', 0);
       if (!this.isPaused || this._settings.get_boolean('pref-start-on-reset')) {
         this._startTime = getUintTime();
@@ -203,14 +203,14 @@ const Chronos = GObject.registerClass(
       } else if (!this._settings.get_boolean('pref-pause-on-destroy')) {
         this._settings.set_uint('state-pause-start-time', getUintTime());
       }
-      this.log('destroy');
+      this.logging('destroy');
       if (this._logOutputStream) {
         this._logOutputStream.close(null);
       }
       this?.destroy();
     }
 
-    log (event) {
+    logging (event) {
       if (!this._settings.get_boolean('pref-log-change-state')) {
         return;
       }

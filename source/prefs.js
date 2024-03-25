@@ -108,14 +108,16 @@ const AppearancePage = GObject.registerClass(
       });
 
       colorButtonNormal.connect('notify::rgba', () => {
-        this._saveColorChange(colorButtonNormal.get_rgba(), 'pref-indicator-color');
+        this._saveColorChange(colorButtonNormal.get_rgba(),
+          'pref-indicator-color');
       });
 
       actionRowNormalColor.add_suffix(colorButtonNormal);
       groupColors.add(actionRowNormalColor);
 
       const pausedColor = new Gdk.RGBA();
-      pausedColor.parse(this.settings.get_string('pref-indicator-paused-color'));
+      pausedColor.parse(
+        this.settings.get_string('pref-indicator-paused-color'));
       const colorButtonPaused = new Gtk.ColorDialogButton({
         rgba: pausedColor,
         halign: 3,
