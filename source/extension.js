@@ -23,6 +23,8 @@ const Chronos = GObject.registerClass(
 
     _init (extention) {
       super._init(0.5, 'Chronos', false);
+      // null - if paused, timestamp when started if count
+      this._startTime = null;
       this._extention = extention;
       this._settings = this._extention.getSettings();
       this.set_style_class_name('panel-button');
@@ -57,11 +59,9 @@ const Chronos = GObject.registerClass(
         this._settings.get_string('pref-indicator-paused-color'),
       ];
 
-      // null - if paused, timestamp when started if count
-      this._startTime = null;
-      if (this._settings.get_boolean('state-paused')) {
-        this._settings.set_boolean('state-paused', false);
-      } else {
+      this.logging('init');
+
+      if (!this._settings.get_boolean('state-paused')) {
         // not paused on destroy
         const storedStartTime = this._settings.get_uint(
           'state-pause-start-time');
@@ -71,21 +71,18 @@ const Chronos = GObject.registerClass(
           this.storeCountedTime();
           this.logging('collect inactive time');
         }
-      }
-
-      if (!this._settings.get_boolean('state-paused')) {
         this.onResume();
-        this._settings.set_boolean('state-paused', false);
       }
 
       this._timeout = GLib.timeout_add(1000, GLib.PRIORITY_LOW, () => {
-        if (getUintTime() - this._startTime > 60 * 5) {
+        // every 2 collected minutes store them
+        if (getUintTime() - this._startTime > 60 * 2) {
           this.storeCountedTime();
         }
         this.refreshIndicatorLabel();
         return true;
       });
-      this.logging('init');
+
       this.updateIndicatorStyle();
     }
 
@@ -160,6 +157,7 @@ const Chronos = GObject.registerClass(
       this._startTime = null;
       this.logging('pause');
       this.updateIndicatorStyle();
+      this._settings.set_boolean('state-paused', true);
     }
 
     onResume () {
@@ -169,6 +167,7 @@ const Chronos = GObject.registerClass(
       this._startTime = getUintTime();
       this.logging('resume');
       this.updateIndicatorStyle();
+      this._settings.set_boolean('state-paused', false);
     }
 
     onReset () {
@@ -198,9 +197,9 @@ const Chronos = GObject.registerClass(
     onDestroy () {
       GLib.Source.remove(this._timeout);
       this.storeCountedTime();
-      if (this.isPaused) {
-        this._settings.set_boolean('state-paused', true);
-      } else if (!this._settings.get_boolean('pref-pause-on-destroy')) {
+      this._settings.set_boolean('state-paused', this.isPaused);
+      if (!this.isPaused &&
+        !this._settings.get_boolean('pref-pause-on-destroy')) {
         this._settings.set_uint('state-pause-start-time', getUintTime());
       }
       this.logging('destroy');
