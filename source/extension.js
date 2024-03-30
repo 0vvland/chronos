@@ -220,8 +220,24 @@ const Chronos = GObject.registerClass(
 
         this._logOutputStream = file.append_to(Gio.FileCreateFlags.NONE, null);
       }
+      const date = new Date();
+      const tzo = -date.getTimezoneOffset();
+      const dif = tzo >= 0 ? '+' : '-';
+      const pad = function (num) {
+        return (num < 10 ? '0' : '') + num;
+      };
+
+      const isoDate = date.getFullYear() +
+        '-' + pad(date.getMonth() + 1) +
+        '-' + pad(date.getDate()) +
+        'T' + pad(date.getHours()) +
+        ':' + pad(date.getMinutes()) +
+        ':' + pad(date.getSeconds()) +
+        dif + pad(Math.floor(Math.abs(tzo) / 60)) +
+        ':' + pad(Math.abs(tzo) % 60);
+
       const bytes = new GLib.Bytes(
-        `${new Date().toISOString()}: [${event}] ${this.getTrackedTime()}\n`,
+        `${isoDate}: [${event}] ${this.getTrackedTime()}\n`,
       );
       this._logOutputStream.write_bytes(bytes, null);
     }
