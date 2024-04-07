@@ -1,5 +1,3 @@
-/* jshint moz:true, unused: false */
-/* exported init, enable, disable */
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import GLib from 'gi://GLib';
 import Clutter from 'gi://Clutter';
@@ -172,7 +170,8 @@ const Chronos = GObject.registerClass(
 
     onReset () {
       this.logging('reset');
-      this._settings.set_int('state-tracked-time', 0);
+      this._settings.set_int('state-tracked-time',
+        this._settings.get_int('pref-reset-time'));
       if (!this.isPaused || this._settings.get_boolean('pref-start-on-reset')) {
         this._startTime = getUintTime();
       }

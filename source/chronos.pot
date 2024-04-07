@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Gnome Shell Extension Chronos\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-03-25 08:24+0300\n"
+"POT-Creation-Date: 2024-04-07 21:18+0300\n"
 "PO-Revision-Date: 2014-10-17 14:14+0300\n"
 "Last-Translator: \n"
 "Language-Team:  \n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: source/extension.js:42 source/extension.js:95
+#: source/extension.js:42 source/extension.js:90
 msgid "Resume"
 msgstr ""
 
@@ -28,62 +28,66 @@ msgstr ""
 msgid "Preferences"
 msgstr ""
 
-#: source/extension.js:95
+#: source/extension.js:90
 msgid "Pause"
 msgstr ""
 
-#: source/prefs.js:18
-msgid "Adjust time"
+#: source/prefs.js:17
+msgid "Time"
 msgstr ""
 
-#: source/prefs.js:26
+#: source/prefs.js:28
 msgid "Adjust tracked time"
 msgstr ""
 
 #: source/prefs.js:30
-msgid "Hours"
+msgid "If tracker is not paused value can be diff with indicator"
 msgstr ""
 
-#: source/prefs.js:41
-msgid "Minutes"
+#: source/prefs.js:39
+msgid "Reset time"
 msgstr ""
 
-#: source/prefs.js:75
+#: source/prefs.js:40
+msgid "Time that will be set initially on reset"
+msgstr ""
+
+#: source/prefs.js:57
 msgid "Appearance"
 msgstr ""
 
-#: source/prefs.js:82
+#: source/prefs.js:64
 msgid "Display"
 msgstr ""
 
-#: source/prefs.js:86
+#: source/prefs.js:68
 msgid "Show seconds"
 msgstr ""
 
-#: source/prefs.js:95
+#: source/prefs.js:77
 msgid "Colours"
 msgstr ""
 
-#: source/prefs.js:107
+#: source/prefs.js:89
 msgid "Normal state"
 msgstr ""
 
-#: source/prefs.js:126
+#: source/prefs.js:110
 msgid "Paused state"
 msgstr ""
 
-#: source/prefs.js:154
+#: source/prefs.js:138
 msgid "Behavior"
 msgstr ""
 
-#: source/prefs.js:163
+#: source/prefs.js:147
 msgid "Pause while screen locked (and other inactive states)"
 msgstr ""
 
-#: source/prefs.js:176
+#: source/prefs.js:160
 msgid "Log changes of time tracker state"
 msgstr ""
 
-#: source/prefs.js:189
+#: source/prefs.js:173
 msgid "Start tracker when restart timer"
 msgstr ""

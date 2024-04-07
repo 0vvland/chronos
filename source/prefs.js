@@ -1,5 +1,3 @@
-/* jshint moz:true, unused: false */
-/* exported init, buildPrefsWidget */
 import Gtk from 'gi://Gtk';
 import Gdk from 'gi://Gdk';
 import Adw from 'gi://Adw';
@@ -9,60 +7,44 @@ import {
   ExtensionPreferences,
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import { TimeRow } from './components/TimeRow.js';
 
 // Page Adjust time
 const AdjustTimePage = GObject.registerClass(
   class ChronosAdjustTimePrefPage extends Adw.PreferencesPage {
     _init (settings, settingsKey) {
       super._init({
-        title: _('Adjust time'),
+        title: _('Time'),
         icon_name: 'org.gnome.Settings-time-symbolic',
         name: 'ChronosAdjustTimePrefPage',
       });
       this.settings = settings;
-      this.initialTrackedTime = settings.get_int('state-tracked-time');
 
-      const groupAdjustStartTime = new Adw.PreferencesGroup({
-        title: _('Adjust tracked time'),
-      });
-
-      this.spinHours = new Adw.SpinRow({
-        title: _('Hours'),
-        adjustment: new Gtk.Adjustment({
-          value: 0,
-          lower: -999,
-          upper: 999,
-          step_increment: 1,
-        }),
-        value: 0,
-      });
-
-      this.spinMin = new Adw.SpinRow({
-        title: _('Minutes'),
-        adjustment: new Gtk.Adjustment({
-          value: 0,
-          lower: -60,
-          upper: 60,
-          step_increment: 1,
-        }),
-        value: 0,
-      });
-
-      this.spinHours.connect('output', this._adjustTrackedTime.bind(this));
-      this.spinMin.connect('output', this._adjustTrackedTime.bind(this));
-
-      groupAdjustStartTime.add(this.spinHours);
-      groupAdjustStartTime.add(this.spinMin);
+      const groupAdjustStartTime = new Adw.PreferencesGroup();
 
       this.add(groupAdjustStartTime);
-    }
 
-    _adjustTrackedTime () {
-      const hours = this.spinHours.get_value();
-      const mins = this.spinMin.get_value();
-      const change = hours * 60 * 60 + mins * 60;
-      this.settings.set_int('state-tracked-time',
-        this.initialTrackedTime + change);
+      const timeRowTrackedTime = new TimeRow({
+        title: _('Adjust tracked time'),
+        subtitle: _(
+          'If tracker is not paused value can be diff with indicator'),
+      });
+
+      this.settings.bind('state-tracked-time', timeRowTrackedTime, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupAdjustStartTime.add(timeRowTrackedTime);
+
+      const timeRowResetTime = new TimeRow({
+        title: _('Reset time'),
+        subtitle: _('Time that will be set initially on reset'),
+      });
+
+      this.settings.bind('pref-reset-time', timeRowResetTime, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupAdjustStartTime.add(timeRowResetTime);
+
     }
   },
 );
