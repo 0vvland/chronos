@@ -1,11 +1,11 @@
 {
   "name": "Chronos Time Tracker",
-  "description": "Time tracker tool",
+  "description": "Time tracker tool\nMange and track your time. Features:\n- tracking time\n- display customisation\n- log to file pause/resume\n- optional pause of tracking on screen lock (hibernate/shutdown)\n- reset to particular time value",
   "settings-schema": "org.gnome.shell.extensions.chronos",
   "uuid": "chronos@time-tracker.com",
   "shell-version": [
     "45"
   ],
   "url": "https://github.com/0vvland/chronos",
-  "version": 6
+  "version": 7
 }

@@ -10,7 +10,7 @@ GNOME Shell extension for mange and track time. Features:
 - tracking time
 - display customisation
 - log to file pause/resume
-- optional pause of tracking on screen lock/hibernate/shutdown
+- optional pause of tracking on screen lock (hibernate/shutdown)
 - reset to particular time value
 
 ### Install
@@ -34,3 +34,5 @@ Clone it to `~/.local/share/gnome-shell/extensions/chronos@time-tracker.com` and
 - add about page
 - truncate log to limit size
 - alarm on particular tracked time
+- pause on screen lock with delay time (like small breaks)
+- auto restart: new day, new session (if possible)

@@ -1,5 +1,3 @@
-import Gtk from 'gi://Gtk';
-import Gdk from 'gi://Gdk';
 import Adw from 'gi://Adw';
 import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
@@ -8,6 +6,7 @@ import {
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import { TimeRow } from './components/TimeRow.js';
+import { ColorRow } from './components/ColorRow.js';
 
 // Page Adjust time
 const AdjustTimePage = GObject.registerClass(
@@ -74,58 +73,27 @@ const AppearancePage = GObject.registerClass(
       groupDisplay.add(switchShowSeconds);
 
       const groupColors = new Adw.PreferencesGroup({
-        title: _('Colours'),
+        title: _('Colors'),
       });
 
-      const normalColor = new Gdk.RGBA();
-      normalColor.parse(this.settings.get_string('pref-indicator-color'));
-      const colorButtonNormal = new Gtk.ColorDialogButton({
-        rgba: normalColor,
-        halign: 3,
-        valign: 3,
-        dialog: new Gtk.ColorDialog(),
-      });
-      const actionRowNormalColor = new Adw.ActionRow({
+      const normalColorRow = new ColorRow({
         title: _('Normal state'),
       });
+      this.settings.bind('pref-indicator-color', normalColorRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
 
-      colorButtonNormal.connect('notify::rgba', () => {
-        this._saveColorChange(colorButtonNormal.get_rgba(),
-          'pref-indicator-color');
-      });
-
-      actionRowNormalColor.add_suffix(colorButtonNormal);
-      groupColors.add(actionRowNormalColor);
-
-      const pausedColor = new Gdk.RGBA();
-      pausedColor.parse(
-        this.settings.get_string('pref-indicator-paused-color'));
-      const colorButtonPaused = new Gtk.ColorDialogButton({
-        rgba: pausedColor,
-        halign: 3,
-        valign: 3,
-        dialog: new Gtk.ColorDialog(),
-      });
-      const actionRowPausedColor = new Adw.ActionRow({
+      const pauseColorRow = new ColorRow({
         title: _('Paused state'),
       });
+      this.settings.bind('pref-indicator-paused-color', pauseColorRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
 
-      colorButtonPaused.connect('notify::rgba', () => {
-        this._saveColorChange(colorButtonPaused.get_rgba(),
-          'pref-indicator-paused-color');
-      });
-
-      actionRowPausedColor.add_suffix(colorButtonPaused);
-
-      groupColors.add(actionRowPausedColor);
+      groupColors.add(normalColorRow);
+      groupColors.add(pauseColorRow);
 
       this.add(groupDisplay);
       this.add(groupColors);
-    }
 
-    _saveColorChange (color, key) {
-      // Saves changes to the settings
-      this.settings.set_string(key, color.to_string());
     }
   },
 );
