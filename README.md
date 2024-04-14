@@ -36,3 +36,5 @@ Clone it to `~/.local/share/gnome-shell/extensions/chronos@time-tracker.com` and
 - alarm on particular tracked time
 - pause on screen lock with delay time (like small breaks)
 - auto restart: new day, new session (if possible)
+
+

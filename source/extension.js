@@ -9,6 +9,7 @@ import {
   gettext as _,
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
+import { ChronosNotification } from './components/Notification.js';
 
 const getUintTime = (ms = Date.now()) => Math.floor(ms / 1000);
 
@@ -51,6 +52,16 @@ const Chronos = GObject.registerClass(
         (() => this._extention.openPreferences()),
         'org.gnome.Settings-symbolic',
       );
+
+      // this.menu.addAction('test',
+      //   (() => {
+      //     const notification = new ChronosNotification(
+      //       'test title',
+      //       'message_body');
+      //     notification.show();
+      //   }),
+      //   'org.gnome.Settings-symbolic',
+      // );
 
       this._indicatorColors = [
         this._settings.get_string('pref-indicator-color'),
