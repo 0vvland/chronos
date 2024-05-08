@@ -4,8 +4,9 @@
   "settings-schema": "org.gnome.shell.extensions.chronos",
   "uuid": "chronos@time-tracker.com",
   "shell-version": [
-    "45"
+    "45",
+    "46"
   ],
   "url": "https://github.com/0vvland/chronos",
-  "version": 7
+  "version": 8
 }
