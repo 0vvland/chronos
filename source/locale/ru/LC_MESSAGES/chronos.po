@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Chronos\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-13 16:53+0300\n"
+"POT-Creation-Date: 2024-05-08 16:55+0300\n"
 "PO-Revision-Date: 2024-03-23 14:15+0300\n"
 "Last-Translator: <0vvland@gmail.com>\n"
 "Language-Team: <0vvland@gmail.com>\n"
@@ -82,18 +82,18 @@ msgstr "Нормальный"
 msgid "Paused state"
 msgstr "Пауза"
 
-#: source/prefs.js:111
+#: source/prefs.js:106
 msgid "Behavior"
 msgstr "Поведение"
 
-#: source/prefs.js:120
+#: source/prefs.js:115
 msgid "Pause while screen locked (and other inactive states)"
 msgstr "Пауза при блокеровке (и других случаях неактивности)"
 
-#: source/prefs.js:133
+#: source/prefs.js:128
 msgid "Log changes of time tracker state"
 msgstr "Вести лог изменений состояния трекера"
 
-#: source/prefs.js:146
+#: source/prefs.js:141
 msgid "Start tracker when restart timer"
 msgstr "Запускать трекер при сбросе"
