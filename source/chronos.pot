@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Gnome Shell Extension Chronos\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-04-13 16:53+0300\n"
+"POT-Creation-Date: 2024-11-23 09:02+0300\n"
 "PO-Revision-Date: 2014-10-17 14:14+0300\n"
 "Last-Translator: \n"
 "Language-Team:  \n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #: source/extension.js:42 source/extension.js:90
-msgid "Resume"
+msgid "Start"
 msgstr ""
 
 #: source/extension.js:46
@@ -76,18 +76,18 @@ msgstr ""
 msgid "Paused state"
 msgstr ""
 
-#: source/prefs.js:111
+#: source/prefs.js:106
 msgid "Behavior"
 msgstr ""
 
-#: source/prefs.js:120
+#: source/prefs.js:115
 msgid "Pause while screen locked (and other inactive states)"
 msgstr ""
 
-#: source/prefs.js:133
+#: source/prefs.js:128
 msgid "Log changes of time tracker state"
 msgstr ""
 
-#: source/prefs.js:146
+#: source/prefs.js:141
 msgid "Start tracker when restart timer"
 msgstr ""
