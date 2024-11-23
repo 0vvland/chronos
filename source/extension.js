@@ -39,7 +39,7 @@ const Chronos = GObject.registerClass(
       });
       this.actor.add_child(this._label);
 
-      this._pauseMenu = this.menu.addAction(_('Resume'),
+      this._pauseMenu = this.menu.addAction(_('Start'),
         this.onToggle.bind(this),
         'media-playback-start-symbolic',
       );
@@ -87,7 +87,7 @@ const Chronos = GObject.registerClass(
     updateIndicatorStyle () {
       const indicatorColor = this._indicatorColors[this.isPaused ? 1 : 0];
       const menuColor = this._indicatorColors[this.isPaused ? 0 : 1];
-      const menuLabel = this.isPaused ? _('Resume') : _('Pause');
+      const menuLabel = this.isPaused ? _('Start') : _('Pause');
       const icon = this.isPaused
         ? 'media-playback-start-symbolic'
         : 'media-playback-pause-symbolic';
@@ -163,7 +163,7 @@ const Chronos = GObject.registerClass(
         return;
       }
       this._startTime = getUintTime();
-      this.logging('resume');
+      this.logging('start');
       this.updateIndicatorStyle();
       this._settings.set_boolean('state-paused', false);
     }
