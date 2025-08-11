@@ -37,7 +37,7 @@ const Chronos = GObject.registerClass(
         y_align: Clutter.ActorAlign.CENTER,
 
       });
-      this.actor.add_child(this._label);
+      this.add_child(this._label);
 
       this._pauseMenu = this.menu.addAction(_('Start'),
         this.onToggle.bind(this),
