@@ -8,6 +8,9 @@ import {
   Extension,
   gettext as _,
 } from 'resource:///org/gnome/shell/extensions/extension.js';
+import {
+  MessageTray
+} from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import { ChronosNotification } from './components/Notification.js';
 
@@ -53,15 +56,15 @@ const Chronos = GObject.registerClass(
         'org.gnome.Settings-symbolic',
       );
 
-      // this.menu.addAction('test',
-      //   (() => {
-      //     const notification = new ChronosNotification(
-      //       'test title',
-      //       'message_body');
-      //     notification.show();
-      //   }),
-      //   'org.gnome.Settings-symbolic',
-      // );
+      this.menu.addAction('test',
+        (() => {
+          const notification = new ChronosNotification(
+            'test title',
+            'message_body');
+          notification.show();
+        }),
+        'org.gnome.Settings-symbolic',
+      );
 
       this._indicatorColors = [
         this._settings.get_string('pref-indicator-color'),

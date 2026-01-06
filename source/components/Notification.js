@@ -1,15 +1,13 @@
 import GObject from 'gi://GObject';
-import Gtk from 'gi://Gtk';
-import Adw from 'gi://Adw';
 import St from 'gi://St';
+import Clutter from 'gi://Clutter';
 import {
   Notification,
   NotificationBanner,
   Source,
 } from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import { Message } from 'resource:///org/gnome/shell/ui/messageList.js';
-import Gio from 'gi://Gio';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 /*
 Alert to take a brake, forget to start tracking, time reached (list? every x time)
@@ -39,41 +37,33 @@ export const ChronosNotification = GObject.registerClass({
     }
 
     createBanner () {
-      const banner = new NotificationBanner(this);
-      // const banner = new Message('test', 'message');
 
-      // const menuModel = new Gio.MenuModel({});
-
-      // SplitButton
-      // const button = new Gtk.LinkButton({
-      //   // style_class: 'notification-button' + extra_style,
-      //   label: 'button',
-      //   uri: 'https://wwww.ya.ru',
-      //   // x_expand: true,
-      //   // can_focus: true,
-      //   // menuModel,
-      // });
-
-      // button.menuModel.
-
-      const buttonBox = new St.BoxLayout({
-        style_class: 'notification-actions',
+      // 1. Create a container for our "dropdown"
+      this._dropdownBin = new St.Bin({
+        style_class: 'notification-dropdown-bin',
         x_expand: true,
+        layout_manager: new Clutter.BinLayout()
       });
 
-      const label = new Gtk.Label({
-        label: ':',
+      // 2. Create the dropdown button
+      this._dropdownButton = new St.Button({
+        label: 'Select Option ▼',
+        style_class: 'button',
+        can_focus: true
       });
 
-      buttonBox.add(label);
-      banner.setActionArea(buttonBox);
-      // banner.addButton(button, () => console.log('test'));
-      return banner;
+      // 3. Attach a Menu (The "Dropdown" list)
+      this._menu = new PopupMenu.PopupMenu(this._dropdownButton, 0.5, St.Side.TOP);
+      Main.uiGroup.add_actor(this._menu.actor);
+      this._menu.actor.hide();
+
+      this._menu.addAction('Option 1', () => console.log('Selected 1'));
+      this._menu.addAction('Option 2', () => console.log('Selected 2'));
     }
 
     show () {
       Main.messageTray.add(this.source);
       this.source.showNotification(this);
     }
-  },
+  }
 );
