@@ -37,6 +37,6 @@ install: build
 	gnome-extensions install ./chronos@time-tracker.com.shell-extension.zip --force
 
 launch:
-	dbus-run-session -- gnome-shell --nested --wayland
+	dbus-run-session -- env GTK_A11Y=none gnome-shell --devkit
 
 run: build install launch

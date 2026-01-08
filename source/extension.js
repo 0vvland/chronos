@@ -37,6 +37,9 @@ const Chronos = GObject.registerClass(
         y_align: Clutter.ActorAlign.CENTER,
 
       });
+      this._label.connect('destroy', () => {
+        this._label = null;
+      });
       this.add_child(this._label);
 
       this._pauseMenu = this.menu.addAction(_('Start'),
@@ -124,7 +127,9 @@ const Chronos = GObject.registerClass(
     }
 
     refreshIndicatorLabel () {
-      this._label.set_text(this.getTrackedTime());
+      if (this._label && this._label.get_parent) {
+        this._label.set_text(this.getTrackedTime());
+      }
     }
 
     storeCountedTime () {
