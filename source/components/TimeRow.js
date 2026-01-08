@@ -77,7 +77,7 @@ export const TimeRow = GObject.registerClass({
       const changeValue = (spin) => () => {
         const sec = Math.abs(this._value % 60);
         const hours = this.hSpin.adjustment.value;
-        const isNegative = hours < 0;
+        const isNegative = hours < 0 || this.hSpin.text === '-0';
         const min = this.mSpin.adjustment.value;
         const change = Math.abs(hours) * 3600 + min * 60 + sec;
         this.value = change * (isNegative ? -1 : 1);
@@ -100,7 +100,11 @@ export const TimeRow = GObject.registerClass({
 
       this.freeze_notify();
       this.hSpin.adjustment.value = hourValue;
-      this.hSpin.text = hourValue.toString().padStart(2, '0');
+      if (hourValue === 0 && isNegative) {
+        this.hSpin.text = '-0';
+      } else {
+        this.hSpin.text = hourValue.toString().padStart(2, '0');
+      }
 
       this.mSpin.adjustment.value = minValue;
       this.mSpin.text = minValue.toString().padStart(2, '0');
