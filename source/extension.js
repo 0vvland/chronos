@@ -9,10 +9,12 @@ import {
   gettext as _,
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 import {
-  MessageTray
+  MessageTray,
+  Notification,
+  getSystemSource,
 } from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import { ChronosNotification } from './components/Notification.js';
+import { PostponeDialog } from './components/PostponeDialog.js';
 
 const getUintTime = (ms = Date.now()) => Math.floor(ms / 1000);
 
@@ -58,10 +60,7 @@ const Chronos = GObject.registerClass(
 
       this.menu.addAction('test',
         (() => {
-          const notification = new ChronosNotification(
-            'test title',
-            'message_body');
-          notification.show();
+          this.showNotification();
         }),
         'org.gnome.Settings-symbolic',
       );
@@ -253,6 +252,26 @@ const Chronos = GObject.registerClass(
         `${isoDate}: [${event}] ${this.getTrackedTime()}\n`,
       );
       this._logOutputStream.write_bytes(bytes, null);
+    }
+
+    showNotification () {
+      const source = getSystemSource();
+      const notification = new Notification({
+        source: source,
+        title: 'Chronos Tracker',
+        iconName: 'appointment-new-symbolic',
+        // gicon: null,
+        body: 'message',
+      });
+
+      notification.addAction('Select Activity...', () => {
+        const dialog = new PostponeDialog((selected) => {
+          console.log(`User now tracking: ${selected}`);
+          // Your logic here (e.g., start timer for 'selected')
+        });
+        dialog.open();
+      });
+      source.addNotification(notification);
     }
   });
 
