@@ -3,7 +3,7 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import {
   Notification,
-  NotificationBanner,
+  // NotificationBanner,
   Source,
 } from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -24,46 +24,100 @@ Props:
 
 */
 
+const DropdownActionButton = GObject.registerClass({
+  GTypeName: 'DropdownActionButton',
+}, class DropdownActionButton extends St.Button {
+  _init (label, callback) {
+    super._init({
+      label: `${label} ▼`,
+      style_class: 'button',
+      can_focus: true,
+      x_expand: true,
+    });
+
+    this._callback = callback;
+
+    // Create the dropdown menu
+    this._menu = new PopupMenu.PopupMenu(this, 0.5, St.Side.TOP);
+    Main.uiGroup.add_child(this._menu.actor);
+    this._menu.actor.hide();
+
+    this._menu.addAction('Option 1', () => console.log('Selected 1'));
+    this._menu.addAction('Option 2', () => console.log('Selected 2'));
+
+    // Connect the physical click to the activation logic
+    this.connect('clicked', () => this.activate());
+  }
+
+  // This method fulfills the requirement to call the callback
+  activate () {
+    if (this._menu.isOpen) {
+      this._menu.close();
+    } else {
+      this._menu.open();
+      // You can trigger the callback here or when an item is selected
+      if (this._callback) {
+        this._callback();
+      }
+    }
+  }
+
+  addMenuItem (label, callback) {
+    this._menu.addAction(label, callback);
+  }
+
+  destroy () {
+    if (this._menu) {
+      Main.uiGroup.remove_child(this._menu.actor);
+      this._menu.destroy();
+    }
+    super.destroy();
+  }
+});
+
 export const ChronosNotification = GObject.registerClass({
     GTypeName: 'ChronosNotification',
     Signals: {},
   },
   class ChronosNotification extends Notification {
 
-    _init (title, message, params) {
-      // TODO set sandwatch icon
-      this.source = new Source('Chronos', 'avatar-default');
-      super._init(this.source, title, message);
+    get actions () {
+      return [this._dropdownButton];
     }
 
-    createBanner () {
+    _init (title, message, params) {
+      this.source = new Source({});
+      // TODO set sandwatch icon
+      super._init({
+        source: this.source,
+        title: 'Chronos Tracker',
+        iconName: 'appointment-new-symbolic',
+        // gicon:
+        body: 'message',
+      });
 
-      // 1. Create a container for our "dropdown"
       this._dropdownBin = new St.Bin({
         style_class: 'notification-dropdown-bin',
         x_expand: true,
-        layout_manager: new Clutter.BinLayout()
+        layout_manager: new Clutter.BinLayout(),
       });
 
-      // 2. Create the dropdown button
-      this._dropdownButton = new St.Button({
-        label: 'Select Option ▼',
-        style_class: 'button',
-        can_focus: true
+      this._dropdownButton = new DropdownActionButton('Select Task', () => {
+        console.log('Dropdown menu was toggled!');
       });
-
-      // 3. Attach a Menu (The "Dropdown" list)
-      this._menu = new PopupMenu.PopupMenu(this._dropdownButton, 0.5, St.Side.TOP);
-      Main.uiGroup.add_actor(this._menu.actor);
-      this._menu.actor.hide();
-
-      this._menu.addAction('Option 1', () => console.log('Selected 1'));
-      this._menu.addAction('Option 2', () => console.log('Selected 2'));
+      // this.emit('action-added', this._dropdownButton);
     }
 
     show () {
-      Main.messageTray.add(this.source);
-      this.source.showNotification(this);
+      if (!Main.messageTray.getSources().includes(this.source)) {
+        Main.messageTray.add(this.source);
+      }
+
+      this.source.addNotification(this);
     }
-  }
+
+    destroy () {
+      super.destroy();
+    }
+  },
 );
