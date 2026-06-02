@@ -18,10 +18,7 @@ source/chronos.pot: source/*.js
 	msgmerge -U $@ $@.tmp
 	rm -f $@.tmp
 
-compile_schema: source/schemas/org.gnome.shell.extensions.chronos.gschema.xml
-	glib-compile-schemas source/schemas/
-
-distr: ./source/*.* compile_schema
+distr: ./source/*.*
 	rm -rf build/
 	cp -R source build
 	find ./build -type f -name *.po -delete
@@ -31,7 +28,7 @@ distr: ./source/*.* compile_schema
 	cd build && zip -qr chronos@time-tracker.com.shell-extension.zip . && mv chronos@time-tracker.com.shell-extension.zip ../
 	rm -rf build
 
-build: update_po compile_schema distr
+build: update_po distr
 
 install: build
 	gnome-extensions install ./chronos@time-tracker.com.shell-extension.zip --force
