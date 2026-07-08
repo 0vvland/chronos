@@ -14,7 +14,7 @@ import {
   getSystemSource,
 } from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import { PostponeDialog } from './components/PostponeDialog.js';
+import { PostponeDialog, formatPostponeTime } from './components/PostponeDialog.js';
 
 const getUintTime = (ms = Date.now()) => Math.floor(ms / 1000);
 
@@ -269,13 +269,13 @@ const Chronos = GObject.registerClass(
         body: 'message',
       });
 
-      notification.addAction('Select Activity...', () => {
-        const dialog = new PostponeDialog((selected) => {
-          console.log(`User now tracking: ${selected}`);
-          // Your logic here (e.g., start timer for 'selected')
-        });
-        dialog.open();
-      });
+      notification.addAction('Postpone...', () => {
+        const options = [300, 600, 900, 1800, 3600, 7200, 14400]
+        const dialog = new PostponeDialog(options, 300, (selected) => {
+          console.log(`Postponed for ${formatPostponeTime(selected)}`)
+        })
+        dialog.open()
+      })
       source.addNotification(notification);
     }
   });

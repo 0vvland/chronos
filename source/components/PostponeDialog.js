@@ -3,14 +3,28 @@ import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
 
+export const formatPostponeTime = (seconds) => {
+  const units = [
+    {label: 'day', secs: 86400},
+    {label: 'hour', secs: 3600},
+    {label: 'minute', secs: 60},
+  ];
+  for (const unit of units) {
+    if (seconds % unit.secs === 0) {
+      const count = seconds / unit.secs;
+      return `${count} ${unit.label}${count !== 1 ? 's' : ''}`;
+    }
+  }
+  return `${seconds} seconds`;
+};
+
 export const PostponeDialog = GObject.registerClass({
   GTypeName: 'PostponeDialog',
 }, class PostponeDialog extends ModalDialog.ModalDialog {
-  _init (callback) {
-    super._init({ styleClass: 'chronos-modal-dialog' });
+  _init(options, defaultValue, callback) {
+    super._init({styleClass: 'chronos-modal-dialog'});
     this._callback = callback;
 
-    // 1. Create a content layout
     let box = new St.BoxLayout({
       vertical: true,
       style_class: 'modal-dialog-content-box',
@@ -18,14 +32,12 @@ export const PostponeDialog = GObject.registerClass({
     });
     this.contentLayout.add_child(box);
 
-    // 2. Add a title
     box.add_child(new St.Label({
-      text: 'Select Activity',
+      text: 'Select Duration',
       style_class: 'modal-dialog-title',
       style: 'font-weight: bold; margin-bottom: 15px;',
     }));
 
-    // 3. Create a Scrollable List Area
     let scrollView = new St.ScrollView({
       hscrollbar_policy: St.PolicyType.NEVER,
       vscrollbar_policy: St.PolicyType.AUTOMATIC,
@@ -33,14 +45,12 @@ export const PostponeDialog = GObject.registerClass({
     });
     box.add_child(scrollView);
 
-    let listBox = new St.BoxLayout({ vertical: true });
+    let listBox = new St.BoxLayout({vertical: true});
     scrollView.set_child(listBox);
 
-    // 4. Add items to the list
-    const options = ['Coding', 'Meeting', 'Design', 'Planning', 'Testing'];
     options.forEach(option => {
       let btn = new St.Button({
-        label: option,
+        label: formatPostponeTime(option),
         style_class: 'button activity-item',
         x_align: Clutter.ActorAlign.FILL,
         style: 'margin: 2px; padding: 8px;',
@@ -54,7 +64,6 @@ export const PostponeDialog = GObject.registerClass({
       listBox.add_child(btn);
     });
 
-    // 5. Add a standard Cancel button at the bottom
     this.setButtons([
       {
         label: 'Cancel',

@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "types": [
+      "@girs/gjs",
+      "@girs/gnome-shell"
+    ]
+  },
+  "include": [
+    "source/**/*.js",
+    "node_modules/@girs/gnome-shell/dist/index-ambient.d.ts"
+  ]
+}

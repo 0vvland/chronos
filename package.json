@@ -1,10 +1,29 @@
 {
+  "private": true,
+  "type": "module",
+  "name": "chronos",
+  "version": "1.0.0",
+  "description": "GNOME Shell time tracker extension (chronos@time-tracker.com)",
+  "scripts": {
+    "build": "make build",
+    "install": "make install",
+    "run": "make run",
+    "lint": "echo 'no linter configured yet'",
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@girs/adw-1": "^1.4.3-3.3.0",
     "@girs/clutter-14": "^14.0.0-3.3.0",
+    "@girs/gdk-4.0": "^4.1.0",
+    "@girs/gio-2.0": "^4.1.0",
     "@girs/gjs": "^3.3.0",
+    "@girs/glib-2.0": "^2.78.0-3.3.0",
     "@girs/gobject-2.0": "^2.78.0-3.3.0",
     "@girs/gtk-4.0": "^4.12.5-3.3.0",
     "@girs/st-14": "^14.0.0-3.3.0"
+  },
+  "devDependencies": {
+    "@girs/gnome-shell": "^49.1.0",
+    "typescript": "^5.4.0"
   }
 }
