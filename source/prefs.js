@@ -1,6 +1,7 @@
 import Adw from 'gi://Adw';
 import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
+import Gtk from 'gi://Gtk';
 import {
   ExtensionPreferences,
   gettext as _,
@@ -196,6 +197,75 @@ const AlarmsPage = GObject.registerClass(
   },
 );
 
+// Page About
+const AboutPage = GObject.registerClass(
+  class ChronosAboutPrefPage extends Adw.PreferencesPage {
+    _init (settings, extensionDir) {
+      super._init({
+        title: _('About'),
+        icon_name: 'help-about-symbolic',
+        name: 'ChronosAboutPrefPage',
+      });
+      this.settings = settings;
+
+      const groupLogo = new Adw.PreferencesGroup();
+
+      const logoBox = new Gtk.Box({
+        orientation: Gtk.Orientation.VERTICAL,
+        halign: Gtk.Align.CENTER,
+        valign: Gtk.Align.CENTER,
+        margin_top: 24,
+        margin_bottom: 24,
+      });
+      logoBox.set_size_request(96, 144);
+      const cssProvider = new Gtk.CssProvider();
+      cssProvider.load_from_string('box { background: white; border-radius: 12px; padding: 16px; }');
+      logoBox.get_style_context().add_provider(cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+      const logoFile = extensionDir.get_child('logo.svg');
+      const logoPicture = Gtk.Picture.new_for_file(logoFile);
+      logoPicture.set_halign(Gtk.Align.FILL);
+      logoPicture.set_valign(Gtk.Align.FILL);
+      logoPicture.set_hexpand(true);
+      logoPicture.set_vexpand(true);
+      logoPicture.set_keep_aspect_ratio(true);
+      logoBox.append(logoPicture);
+
+      groupLogo.add(logoBox);
+
+      const groupInfo = new Adw.PreferencesGroup({
+        title: _('Chronos Time Tracker'),
+      });
+
+      const descriptionRow = new Adw.ActionRow({
+        title: _('Description'),
+        subtitle: _(
+          'Time tracker tool. Track your time, customize display, log start/pause events.'
+        ),
+      });
+
+      const urlRow = new Adw.ActionRow({
+        title: _('Website'),
+        subtitle: 'https://github.com/0vvland/chronos',
+      });
+
+      const linkButton = new Gtk.LinkButton({
+        label: _('Open'),
+        uri: 'https://github.com/0vvland/chronos',
+        valign: Gtk.Align.CENTER,
+      });
+      urlRow.add_suffix(linkButton);
+      urlRow.activatable_widget = linkButton;
+
+      groupInfo.add(descriptionRow);
+      groupInfo.add(urlRow);
+
+      this.add(groupLogo);
+      this.add(groupInfo);
+    }
+  },
+);
+
 export default class ChronosPreferences extends ExtensionPreferences {
   fillPreferencesWindow (window) {
     const settings = this.getSettings();
@@ -204,10 +274,12 @@ export default class ChronosPreferences extends ExtensionPreferences {
     const pageAppearance = new AppearancePage(settings);
     const pageBehavior = new BehaviorPage(settings);
     const pageAlarms = new AlarmsPage(settings);
+    const pageAbout = new AboutPage(settings, this.dir);
 
     window.add(pageAdjustTime);
     window.add(pageAppearance);
     window.add(pageBehavior);
     window.add(pageAlarms);
+    window.add(pageAbout);
   }
 }
