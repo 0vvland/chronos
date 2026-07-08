@@ -29,6 +29,8 @@ const Chronos = GObject.registerClass(
       super._init(0.5, 'Chronos', false);
       // null - if paused, timestamp when started if count
       this._startTime = null;
+      this._breakAlarmShown = false;
+      this._nextBreakAlarmTime = 0;
       this._extention = extention;
       this._settings = this._extention.getSettings();
       this.set_style_class_name('panel-button');
@@ -94,6 +96,19 @@ const Chronos = GObject.registerClass(
           this.storeCountedTime();
         }
         this.refreshIndicatorLabel();
+
+        const breakInterval = this._settings.get_int('pref-break-alarm-interval');
+        if (breakInterval > 0 && !this.isPaused) {
+          if (this._nextBreakAlarmTime > 0 && getUintTime() >= this._nextBreakAlarmTime) {
+            this._nextBreakAlarmTime = 0;
+            this._breakAlarmShown = false;
+          }
+          if (!this._breakAlarmShown && this._nextBreakAlarmTime === 0 && this.getTrackedSeconds() >= breakInterval) {
+            this.showNotification();
+            this._breakAlarmShown = true;
+          }
+        }
+
         return true;
       });
 
@@ -112,6 +127,15 @@ const Chronos = GObject.registerClass(
       this._pauseMenu?.set_style(`color: ${menuColor};`);
       this._pauseMenu?.label.set_text(menuLabel);
       this._pauseMenu?.setIcon(icon);
+    }
+
+    getTrackedSeconds () {
+      let trackedTime = this._settings.get_int('state-tracked-time');
+      if (!this.isPaused) {
+        const extraCountedTime = getUintTime() - this._startTime;
+        trackedTime += extraCountedTime;
+      }
+      return trackedTime;
     }
 
     getTrackedTime () {
@@ -171,6 +195,8 @@ const Chronos = GObject.registerClass(
       }
       this.storeCountedTime();
       this._startTime = null;
+      this._breakAlarmShown = false;
+      this._nextBreakAlarmTime = 0;
       this.logging('pause');
       this.updateIndicatorStyle();
       this._settings.set_boolean('state-paused', true);
@@ -190,6 +216,8 @@ const Chronos = GObject.registerClass(
       this.logging('reset');
       this._settings.set_int('state-tracked-time',
         this._settings.get_int('pref-reset-time'));
+      this._breakAlarmShown = false;
+      this._nextBreakAlarmTime = 0;
       if (!this.isPaused || this._settings.get_boolean('pref-start-on-reset')) {
         this._startTime = getUintTime();
       }
@@ -270,9 +298,10 @@ const Chronos = GObject.registerClass(
       });
 
       notification.addAction('Postpone...', () => {
-        const options = [300, 600, 900, 1800, 3600, 7200, 14400]
+        const options = [60, 300, this._settings.get_int('pref-break-alarm-interval')].filter((s,i, a) => a.findIndex(s) ===i).sort()
         const dialog = new PostponeDialog(options, 300, (selected) => {
-          console.log(`Postponed for ${formatPostponeTime(selected)}`)
+          this._nextBreakAlarmTime = getUintTime() + selected;
+          this._breakAlarmShown = false;
         })
         dialog.open()
       })
