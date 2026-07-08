@@ -53,5 +53,15 @@
             <summary>Reset time</summary>
             <description>Used to store time that will set initially on reset</description>
         </key>
+        <key name="pref-break-alarm-enabled" type="b">
+            <default>false</default>
+            <summary>Break alarm enabled</summary>
+            <description>Enable take a break alarm</description>
+        </key>
+        <key name="pref-break-alarm-interval" type="i">
+            <default>0</default>
+            <summary>Break alarm interval</summary>
+            <description>Interval in seconds of non-pause tracking time before alarm triggers</description>
+        </key>
     </schema>
 </schemalist>
