@@ -96,3 +96,27 @@ msgstr "Вести лог изменений состояния трекера"
 #: source/prefs.js:141
 msgid "Start tracker when restart timer"
 msgstr "Запускать трекер при сбросе"
+
+#: source/prefs.js:158
+msgid "Alarms"
+msgstr "Оповещения"
+
+#: source/prefs.js:165
+msgid "Take a break alarm"
+msgstr "Сделай перерыв оповещение"
+
+#: source/prefs.js:169
+msgid "Enable break alarm"
+msgstr "Активировать оповещение о перерыве"
+
+#: source/prefs.js:170
+msgid "Notify to take a break after a period of tracking"
+msgstr "Оповещать о необходимости сделать перерыв после интервала трекера"
+
+#: source/prefs.js:179
+msgid "Interval"
+msgstr "Интервал"
+
+#: source/prefs.js:180
+msgid "Time of non-pause tracking before alarm triggers"
+msgstr "Время активного трекинга до оповещения"

@@ -150,6 +150,52 @@ const BehaviorPage = GObject.registerClass(
   },
 );
 
+// Page Alarms
+const AlarmsPage = GObject.registerClass(
+  class ChronosAlarmsPrefPage extends Adw.PreferencesPage {
+    _init (settings, settingsKey) {
+      super._init({
+        title: _('Alarms'),
+        icon_name: 'alarm-symbolic',
+        name: 'ChronosAlarmsPrefPage',
+      });
+      this.settings = settings;
+
+      const groupBreakAlarm = new Adw.PreferencesGroup({
+        title: _('Take a break alarm'),
+      });
+
+      const switchBreakAlarm = new Adw.SwitchRow({
+        title: _('Enable break alarm'),
+        subtitle: _('Notify to take a break after a period of tracking'),
+      });
+
+      this.settings.bind('pref-break-alarm-enabled', switchBreakAlarm, 'active',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupBreakAlarm.add(switchBreakAlarm);
+
+      const intervalRow = new TimeRow({
+        title: _('Interval'),
+        subtitle: _('Time of non-pause tracking before alarm triggers'),
+        value: this.settings.get_int('pref-break-alarm-interval'),
+      });
+
+      this.settings.bind('pref-break-alarm-interval', intervalRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      intervalRow.visible = switchBreakAlarm.active;
+      switchBreakAlarm.connect('notify::active', () => {
+        intervalRow.visible = switchBreakAlarm.active;
+      });
+
+      groupBreakAlarm.add(intervalRow);
+
+      this.add(groupBreakAlarm);
+    }
+  },
+);
+
 export default class ChronosPreferences extends ExtensionPreferences {
   fillPreferencesWindow (window) {
     const settings = this.getSettings();
@@ -157,9 +203,11 @@ export default class ChronosPreferences extends ExtensionPreferences {
     const pageAdjustTime = new AdjustTimePage(settings);
     const pageAppearance = new AppearancePage(settings);
     const pageBehavior = new BehaviorPage(settings);
+    const pageAlarms = new AlarmsPage(settings);
 
     window.add(pageAdjustTime);
     window.add(pageAppearance);
     window.add(pageBehavior);
+    window.add(pageAlarms);
   }
 }

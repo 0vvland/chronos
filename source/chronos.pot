@@ -8,7 +8,6 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-08 13:43+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,19 +16,19 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: source/extension.js:48 source/extension.js:103
+#: source/extension.js:51 source/extension.js:106
 msgid "Start"
 msgstr ""
 
-#: source/extension.js:52
+#: source/extension.js:55
 msgid "Restart"
 msgstr ""
 
-#: source/extension.js:56
+#: source/extension.js:59
 msgid "Preferences"
 msgstr ""
 
-#: source/extension.js:103
+#: source/extension.js:106
 msgid "Pause"
 msgstr ""
 
@@ -91,4 +90,28 @@ msgstr ""
 
 #: source/prefs.js:141
 msgid "Start tracker when restart timer"
+msgstr ""
+
+#: source/prefs.js:158
+msgid "Alarms"
+msgstr ""
+
+#: source/prefs.js:165
+msgid "Take a break alarm"
+msgstr ""
+
+#: source/prefs.js:169
+msgid "Enable break alarm"
+msgstr ""
+
+#: source/prefs.js:170
+msgid "Notify to take a break after a period of tracking"
+msgstr ""
+
+#: source/prefs.js:179
+msgid "Interval"
+msgstr ""
+
+#: source/prefs.js:180
+msgid "Time of non-pause tracking before alarm triggers"
 msgstr ""

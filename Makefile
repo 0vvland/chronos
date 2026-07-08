@@ -46,6 +46,11 @@ build: update_po distr
 
 # ── install / reload / launch ─────────────────────────────────
 
+# Reload extension in the running Shell (only style and preferences)
+reload:
+	-gnome-extensions disable '$(UUID)'
+	gnome-extensions enable '$(UUID)'
+
 install: build
 	gnome-extensions install ./$(ZIPFILE) --force
 
