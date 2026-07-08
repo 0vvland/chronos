@@ -3,32 +3,33 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
+#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: Gnome Shell Extension Chronos\n"
+"Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-23 09:02+0300\n"
-"PO-Revision-Date: 2014-10-17 14:14+0300\n"
-"Last-Translator: \n"
-"Language-Team:  \n"
+"POT-Creation-Date: 2026-01-08 13:43+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: source/extension.js:42 source/extension.js:90
+#: source/extension.js:48 source/extension.js:103
 msgid "Start"
 msgstr ""
 
-#: source/extension.js:46
+#: source/extension.js:52
 msgid "Restart"
 msgstr ""
 
-#: source/extension.js:50
+#: source/extension.js:56
 msgid "Preferences"
 msgstr ""
 
-#: source/extension.js:90
+#: source/extension.js:103
 msgid "Pause"
 msgstr ""
 
