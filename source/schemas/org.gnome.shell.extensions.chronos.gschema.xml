@@ -58,5 +58,30 @@
             <summary>Break alarm interval</summary>
             <description>Interval in seconds of non-pause tracking time before alarm triggers, 0 disables the alarm</description>
         </key>
+        <key name="pref-start-alarm-days" type="ai">
+            <default>[]</default>
+            <summary>Start alarm weekdays</summary>
+            <description>Weekdays the start tracking alarm is active on, 0 = Sunday ... 6 = Saturday, an empty array disables the alarm</description>
+        </key>
+        <key name="pref-start-alarm-from" type="i">
+            <default>32400</default>
+            <summary>Start alarm timeframe opening</summary>
+            <description>Time of day the start alarm timeframe opens, in seconds since local midnight</description>
+        </key>
+        <key name="pref-start-alarm-to" type="i">
+            <default>64800</default>
+            <summary>Start alarm timeframe closing</summary>
+            <description>Time of day the start alarm timeframe closes, in seconds since local midnight, the alarm is inactive when it is not later than the opening</description>
+        </key>
+        <key name="pref-start-alarm-delay" type="i">
+            <default>900</default>
+            <summary>Start alarm delay</summary>
+            <description>Time in seconds the tracker may stay paused inside the timeframe before the alarm triggers</description>
+        </key>
+        <key name="state-start-alarm-dismissed" type="i">
+            <default>0</default>
+            <summary>Start alarm dismissed day</summary>
+            <description>Local calendar day the start alarm was dismissed for, as YYYYMMDD, 0 means never dismissed</description>
+        </key>
     </schema>
 </schemalist>

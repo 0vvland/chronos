@@ -31,6 +31,14 @@ const Chronos = GObject.registerClass(
       this._startTime = null;
       // null - if disarmed, timestamp of the next break alarm otherwise
       this._breakDeadline = null;
+      // null - unless a postponement overrides the anchored start deadline
+      this._startDeadline = null;
+      // timestamp the current pause began, null while tracking
+      this._pauseStartTime = getUintTime();
+      // the start alarm fires at most once per idle period
+      this._startAlarmFired = false;
+      // in the anchoring rule, so unlocking never alerts immediately
+      this._enabledAt = getUintTime();
       this._extention = extention;
       this._settings = this._extention.getSettings();
       this.set_style_class_name('panel-button');
@@ -97,6 +105,14 @@ const Chronos = GObject.registerClass(
           this.showNotification();
         }
 
+        const now = new Date();
+        if (this.isStartAlarmEligible(now) &&
+          getUintTime(now.getTime()) >= this.getStartDeadline(now)) {
+          this._startAlarmFired = true;
+          this._startDeadline = null;
+          this.showStartNotification();
+        }
+
         return true;
       });
 
@@ -120,6 +136,59 @@ const Chronos = GObject.registerClass(
     getBreakDeadline () {
       const interval = this._settings.get_int('pref-break-alarm-interval');
       return interval > 0 ? getUintTime() + interval : null;
+    }
+
+    // local calendar day as YYYYMMDD, the encoding of
+    // 'state-start-alarm-dismissed'
+    getLocalDay (date = new Date()) {
+      return date.getFullYear() * 10000 +
+        (date.getMonth() + 1) * 100 +
+        date.getDate();
+    }
+
+    // Everything is derived from local time on each call, so the timeframe
+    // follows the wall clock across midnight, DST and suspend/resume
+    isStartAlarmEligible (date = new Date()) {
+      const days = this._settings.get_value('pref-start-alarm-days')
+        .deep_unpack();
+      if (days.length === 0 || !days.includes(date.getDay())) {
+        return false;
+      }
+      if (!this.isPaused || this._startAlarmFired) {
+        return false;
+      }
+      if (this._settings.get_int('state-start-alarm-dismissed') ===
+        this.getLocalDay(date)) {
+        return false;
+      }
+      const from = this._settings.get_int('pref-start-alarm-from');
+      const to = this._settings.get_int('pref-start-alarm-to');
+      if (to <= from) {
+        return false;
+      }
+      const secondsOfDay = date.getHours() * 3600 +
+        date.getMinutes() * 60 +
+        date.getSeconds();
+      return secondsOfDay >= from && secondsOfDay < to;
+    }
+
+    // deadline = max(pauseStart, enabledAt, timeframeOpenToday) + delay,
+    // unless a postponement pinned an explicit one
+    getStartDeadline (date = new Date()) {
+      if (this._startDeadline !== null) {
+        return this._startDeadline;
+      }
+      const secondsOfDay = date.getHours() * 3600 +
+        date.getMinutes() * 60 +
+        date.getSeconds();
+      const timeframeOpenToday = getUintTime(date.getTime()) - secondsOfDay +
+        this._settings.get_int('pref-start-alarm-from');
+      const anchor = Math.max(
+        this._pauseStartTime ?? 0,
+        this._enabledAt,
+        timeframeOpenToday,
+      );
+      return anchor + this._settings.get_int('pref-start-alarm-delay');
     }
 
     getTrackedTime () {
@@ -180,6 +249,7 @@ const Chronos = GObject.registerClass(
       this.storeCountedTime();
       this._startTime = null;
       this._breakDeadline = null;
+      this._pauseStartTime = getUintTime();
       this.logging('pause');
       this.updateIndicatorStyle();
       this._settings.set_boolean('state-paused', true);
@@ -191,6 +261,11 @@ const Chronos = GObject.registerClass(
       }
       this._startTime = getUintTime();
       this._breakDeadline = this.getBreakDeadline();
+      // starting the tracker ends the idle period, so the start alarm is
+      // disarmed and may fire again after the next pause
+      this._pauseStartTime = null;
+      this._startDeadline = null;
+      this._startAlarmFired = false;
       this.logging('start');
       this.updateIndicatorStyle();
       this._settings.set_boolean('state-paused', false);
@@ -204,8 +279,12 @@ const Chronos = GObject.registerClass(
         const wasPaused = this.isPaused;
         this._startTime = getUintTime();
         if (wasPaused) {
-          // reset started a new working stretch
+          // reset started a new working stretch, so it also ended the idle
+          // period - a later pause begins a fresh one
           this._breakDeadline = this.getBreakDeadline();
+          this._pauseStartTime = null;
+          this._startDeadline = null;
+          this._startAlarmFired = false;
         }
       }
       this.updateIndicatorStyle();
@@ -295,6 +374,40 @@ const Chronos = GObject.registerClass(
         });
         dialog.open();
       });
+      source.addNotification(notification);
+    }
+
+    showStartNotification () {
+      const source = getSystemSource();
+      const notification = new Notification({
+        source: source,
+        title: _('Chronos Tracker'),
+        iconName: 'appointment-new-symbolic',
+        body: _('Time tracking is paused, time to start'),
+      });
+
+      notification.addAction(_('Start'), () => {
+        this.onResume();
+      });
+
+      notification.addAction(_('Postpone...'), () => {
+        const options = [
+          300,
+          900,
+          this._settings.get_int('pref-start-alarm-delay'),
+        ].filter((s, i, a) => a.indexOf(s) === i).sort((a, b) => a - b);
+        const dialog = new PostponeDialog(options, (selected) => {
+          this._startDeadline = getUintTime() + selected;
+          this._startAlarmFired = false;
+        });
+        dialog.open();
+      });
+
+      notification.addAction(_('Not today'), () => {
+        this._settings.set_int('state-start-alarm-dismissed',
+          this.getLocalDay());
+      });
+
       source.addNotification(notification);
     }
   });

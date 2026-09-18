@@ -1,6 +1,7 @@
 import Adw from 'gi://Adw';
 import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import {
   ExtensionPreferences,
@@ -8,9 +9,15 @@ import {
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import { TimeRow } from './components/TimeRow.js';
 import { ColorRow } from './components/ColorRow.js';
+import { WeekdayRow } from './components/WeekdayRow.js';
 
 // Offered when the break alarm is switched on without a stored interval
 const DEFAULT_BREAK_INTERVAL = 3600;
+
+const DEFAULT_START_DAYS = [1, 2, 3, 4, 5];
+
+// times of day and the delay stay inside one day: 00:00 to 23:59
+const TIME_OF_DAY_BOUNDS = { hoursLower: 0, hoursUpper: 23 };
 
 // Page Adjust time
 const AdjustTimePage = GObject.registerClass(
@@ -209,6 +216,113 @@ const AlarmsPage = GObject.registerClass(
       groupBreakAlarm.add(intervalRow);
 
       this.add(groupBreakAlarm);
+
+      const groupStartAlarm = new Adw.PreferencesGroup({
+        title: _('Start tracking reminder'),
+      });
+
+      // an empty 'pref-start-alarm-days' means the alarm is off, so the switch
+      // is not bound to a key: it writes an empty array or the last selection
+      const storedDays = this.settings.get_value('pref-start-alarm-days')
+        .deep_unpack();
+      this._startDays = storedDays.length > 0
+        ? storedDays
+        : DEFAULT_START_DAYS;
+
+      const switchStartAlarm = new Adw.SwitchRow({
+        title: _('Enable start tracking reminder'),
+        subtitle: _(
+          'Notify when the tracker stays paused during working hours'),
+        active: storedDays.length > 0,
+      });
+
+      groupStartAlarm.add(switchStartAlarm);
+
+      const daysRow = new WeekdayRow({
+        title: _('Days'),
+        subtitle: _('Weekdays the reminder is active on'),
+        value: this._startDays,
+      });
+
+      // Gio.Settings.bind does not handle array properties, so wire it by hand
+      daysRow.connect('notify::value', () => {
+        if (daysRow.value.length > 0) {
+          this._startDays = daysRow.value;
+        }
+        if (switchStartAlarm.active) {
+          this.settings.set_value('pref-start-alarm-days',
+            new GLib.Variant('ai', daysRow.value));
+        }
+      });
+
+      groupStartAlarm.add(daysRow);
+
+      const fromRow = new TimeRow({
+        title: _('From'),
+        subtitle: _('Time of day the reminder becomes active'),
+        ...TIME_OF_DAY_BOUNDS,
+      });
+
+      this.settings.bind('pref-start-alarm-from', fromRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupStartAlarm.add(fromRow);
+
+      const toRow = new TimeRow({
+        title: _('To'),
+        subtitle: _('Time of day the reminder stops being active'),
+        ...TIME_OF_DAY_BOUNDS,
+      });
+
+      this.settings.bind('pref-start-alarm-to', toRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupStartAlarm.add(toRow);
+
+      const delayRow = new TimeRow({
+        title: _('Delay'),
+        subtitle: _('Time of pause inside the timeframe before alarm triggers'),
+        ...TIME_OF_DAY_BOUNDS,
+      });
+
+      this.settings.bind('pref-start-alarm-delay', delayRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupStartAlarm.add(delayRow);
+
+      const timeframeWarning = new Adw.ActionRow({
+        title: _('The reminder is inactive'),
+        subtitle: _('"To" must be later than "From"'),
+      });
+      timeframeWarning.add_prefix(new Gtk.Image({
+        icon_name: 'dialog-warning-symbolic',
+      }));
+
+      groupStartAlarm.add(timeframeWarning);
+
+      const startAlarmRows = [daysRow, fromRow, toRow, delayRow];
+
+      const refreshStartAlarmRows = () => {
+        startAlarmRows.forEach((row) => {
+          row.visible = switchStartAlarm.active;
+        });
+        timeframeWarning.visible = switchStartAlarm.active &&
+          toRow.value <= fromRow.value;
+      };
+
+      fromRow.connect('notify::value', refreshStartAlarmRows);
+      toRow.connect('notify::value', refreshStartAlarmRows);
+
+      switchStartAlarm.connect('notify::active', () => {
+        this.settings.set_value('pref-start-alarm-days',
+          new GLib.Variant('ai',
+            switchStartAlarm.active ? this._startDays : []));
+        refreshStartAlarmRows();
+      });
+
+      refreshStartAlarmRows();
+
+      this.add(groupStartAlarm);
     }
   },
 );

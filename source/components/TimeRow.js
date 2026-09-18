@@ -48,8 +48,9 @@ export const TimeRow = GObject.registerClass({
         wrap: true,
         'climb-rate': 1,
         adjustment: new Gtk.Adjustment({
-          lower: -999,
-          upper: 999,
+          // a time of day or a sub-day duration passes its own bounds
+          lower: params.hoursLower ?? -999,
+          upper: params.hoursUpper ?? 999,
           step_increment: 1,
         }),
       });

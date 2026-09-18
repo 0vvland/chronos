@@ -24,16 +24,24 @@ Reusable components in `source/components/`: `TimeRow` (HH:MM spin buttons), `Co
 | `pref-indicator-color` | string | `'rgb(51, 209, 122)'` | Active color |
 | `pref-indicator-paused-color` | string | `'rgb(237, 51, 59)'` | Paused color |
 | `pref-reset-time` | int | 0 | Reset target in seconds |
+| `pref-break-alarm-interval` | int | 0 | Tracking seconds before break alarm; 0 = off |
+| `pref-start-alarm-days` | int array | `[]` | Start alarm weekdays, `0 = Sunday … 6 = Saturday`; empty = off |
+| `pref-start-alarm-from` | int | 32400 | Timeframe opening, seconds since local midnight |
+| `pref-start-alarm-to` | int | 64800 | Timeframe closing; `<= from` = inactive |
+| `pref-start-alarm-delay` | int | 900 | Paused seconds inside timeframe before alerting |
+| `state-start-alarm-dismissed` | int | 0 | Local day dismissed for, `YYYYMMDD`; 0 = never |
 
 ## Build Commands
 
 | Command | What it runs |
 |---|---|
-| `make build` | update PO → compile schema → zip to `.shell-extension.zip` |
+| `make build` | update PO → zip to `.shell-extension.zip` |
 | `make install` | build + `gnome-extensions install --force` |
 | `make run` | build + install + nested Shell via `dbus-run-session` |
-| `make compile_schema` | `glib-compile-schemas source/schemas/` |
 | `make launch` | `dbus-run-session -- gnome-shell --devkit` |
+
+Schemas are not compiled by the build: `gnome-extensions install` compiles them
+on install (Shell 50).
 
 ## Style Conventions
 
