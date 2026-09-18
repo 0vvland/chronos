@@ -9,6 +9,9 @@ import {
 import { TimeRow } from './components/TimeRow.js';
 import { ColorRow } from './components/ColorRow.js';
 
+// Offered when the break alarm is switched on without a stored interval
+const DEFAULT_BREAK_INTERVAL = 3600;
+
 // Page Adjust time
 const AdjustTimePage = GObject.registerClass(
   class ChronosAdjustTimePrefPage extends Adw.PreferencesPage {
@@ -154,7 +157,7 @@ const BehaviorPage = GObject.registerClass(
 // Page Alarms
 const AlarmsPage = GObject.registerClass(
   class ChronosAlarmsPrefPage extends Adw.PreferencesPage {
-    _init (settings, settingsKey) {
+    _init (settings) {
       super._init({
         title: _('Alarms'),
         icon_name: 'alarm-symbolic',
@@ -166,28 +169,41 @@ const AlarmsPage = GObject.registerClass(
         title: _('Take a break alarm'),
       });
 
+      // 'pref-break-alarm-interval' of 0 means the alarm is off, so the switch
+      // is not bound to a key: it writes 0 or the last interval the user chose
+      const storedInterval = this.settings.get_int('pref-break-alarm-interval');
+      this._breakInterval = storedInterval > 0
+        ? storedInterval
+        : DEFAULT_BREAK_INTERVAL;
+
       const switchBreakAlarm = new Adw.SwitchRow({
         title: _('Enable break alarm'),
         subtitle: _('Notify to take a break after a period of tracking'),
+        active: storedInterval > 0,
       });
-
-      this.settings.bind('pref-break-alarm-enabled', switchBreakAlarm, 'active',
-        Gio.SettingsBindFlags.DEFAULT);
 
       groupBreakAlarm.add(switchBreakAlarm);
 
       const intervalRow = new TimeRow({
         title: _('Interval'),
         subtitle: _('Time of non-pause tracking before alarm triggers'),
-        value: this.settings.get_int('pref-break-alarm-interval'),
+        value: this._breakInterval,
       });
 
-      this.settings.bind('pref-break-alarm-interval', intervalRow, 'value',
-        Gio.SettingsBindFlags.DEFAULT);
+      intervalRow.connect('notify::value', () => {
+        if (intervalRow.value > 0) {
+          this._breakInterval = intervalRow.value;
+        }
+        if (switchBreakAlarm.active) {
+          this.settings.set_int('pref-break-alarm-interval', intervalRow.value);
+        }
+      });
 
       intervalRow.visible = switchBreakAlarm.active;
       switchBreakAlarm.connect('notify::active', () => {
         intervalRow.visible = switchBreakAlarm.active;
+        this.settings.set_int('pref-break-alarm-interval',
+          switchBreakAlarm.active ? this._breakInterval : 0);
       });
 
       groupBreakAlarm.add(intervalRow);

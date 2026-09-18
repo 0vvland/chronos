@@ -9,19 +9,25 @@ export const formatPostponeTime = (seconds) => {
     {label: 'hour', secs: 3600},
     {label: 'minute', secs: 60},
   ];
+  const parts = [];
+  let rest = seconds;
   for (const unit of units) {
-    if (seconds % unit.secs === 0) {
-      const count = seconds / unit.secs;
-      return `${count} ${unit.label}${count !== 1 ? 's' : ''}`;
+    const count = Math.floor(rest / unit.secs);
+    if (count > 0) {
+      parts.push(`${count} ${unit.label}${count !== 1 ? 's' : ''}`);
+      rest -= count * unit.secs;
     }
   }
-  return `${seconds} seconds`;
+  if (rest > 0 || parts.length === 0) {
+    parts.push(`${rest} second${rest !== 1 ? 's' : ''}`);
+  }
+  return parts.join(' ');
 };
 
 export const PostponeDialog = GObject.registerClass({
   GTypeName: 'PostponeDialog',
 }, class PostponeDialog extends ModalDialog.ModalDialog {
-  _init(options, defaultValue, callback) {
+  _init(options, callback) {
     super._init({styleClass: 'chronos-modal-dialog'});
     this._callback = callback;
 

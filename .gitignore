@@ -7,5 +7,6 @@
 chronos@time-tracker.com.shell-extension.zip
 /gnome-shell/
 /node_modules/
+/source/schemas/gschemas.compiled
 
 .codegraph

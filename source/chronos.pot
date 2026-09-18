@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: source/extension.js:53 source/extension.js:121
+#: source/extension.js:53 source/extension.js:109
 msgid "Start"
 msgstr ""
 
@@ -28,116 +28,128 @@ msgstr ""
 msgid "Preferences"
 msgstr ""
 
-#: source/extension.js:121
+#: source/extension.js:109
 msgid "Pause"
 msgstr ""
 
-#: source/prefs.js:17
+#: source/extension.js:281
+msgid "Chronos Tracker"
+msgstr ""
+
+#: source/extension.js:284
+msgid "Time to take a break"
+msgstr ""
+
+#: source/extension.js:287
+msgid "Postpone..."
+msgstr ""
+
+#: source/prefs.js:20
 msgid "Time"
 msgstr ""
 
-#: source/prefs.js:28
+#: source/prefs.js:31
 msgid "Adjust tracked time"
 msgstr ""
 
-#: source/prefs.js:30
+#: source/prefs.js:33
 msgid "If tracker is not paused value can be diff with indicator"
 msgstr ""
 
-#: source/prefs.js:39
+#: source/prefs.js:42
 msgid "Reset time"
 msgstr ""
 
-#: source/prefs.js:40
+#: source/prefs.js:43
 msgid "Time that will be set initially on reset"
 msgstr ""
 
-#: source/prefs.js:57
+#: source/prefs.js:60
 msgid "Appearance"
 msgstr ""
 
-#: source/prefs.js:64
+#: source/prefs.js:67
 msgid "Display"
 msgstr ""
 
-#: source/prefs.js:68
+#: source/prefs.js:71
 msgid "Show seconds"
 msgstr ""
 
-#: source/prefs.js:77
+#: source/prefs.js:80
 msgid "Colors"
 msgstr ""
 
-#: source/prefs.js:81
+#: source/prefs.js:84
 msgid "Normal state"
 msgstr ""
 
-#: source/prefs.js:87
+#: source/prefs.js:90
 msgid "Paused state"
 msgstr ""
 
-#: source/prefs.js:107
+#: source/prefs.js:110
 msgid "Behavior"
 msgstr ""
 
-#: source/prefs.js:116
+#: source/prefs.js:119
 msgid "Pause while screen locked (and other inactive states)"
 msgstr ""
 
-#: source/prefs.js:129
+#: source/prefs.js:132
 msgid "Log changes of time tracker state"
 msgstr ""
 
-#: source/prefs.js:142
+#: source/prefs.js:145
 msgid "Start tracker when restart timer"
 msgstr ""
 
-#: source/prefs.js:159
+#: source/prefs.js:162
 msgid "Alarms"
 msgstr ""
 
-#: source/prefs.js:166
+#: source/prefs.js:169
 msgid "Take a break alarm"
 msgstr ""
 
-#: source/prefs.js:170
+#: source/prefs.js:180
 msgid "Enable break alarm"
 msgstr ""
 
-#: source/prefs.js:171
+#: source/prefs.js:181
 msgid "Notify to take a break after a period of tracking"
 msgstr ""
 
-#: source/prefs.js:180
+#: source/prefs.js:188
 msgid "Interval"
 msgstr ""
 
-#: source/prefs.js:181
+#: source/prefs.js:189
 msgid "Time of non-pause tracking before alarm triggers"
 msgstr ""
 
-#: source/prefs.js:205
+#: source/prefs.js:221
 msgid "About"
 msgstr ""
 
-#: source/prefs.js:237
+#: source/prefs.js:253
 msgid "Chronos Time Tracker"
 msgstr ""
 
-#: source/prefs.js:241
+#: source/prefs.js:257
 msgid "Description"
 msgstr ""
 
-#: source/prefs.js:243
+#: source/prefs.js:259
 msgid ""
 "Time tracker tool. Track your time, customize display, log start/pause "
 "events."
 msgstr ""
 
-#: source/prefs.js:248
+#: source/prefs.js:264
 msgid "Website"
 msgstr ""
 
-#: source/prefs.js:253
+#: source/prefs.js:269
 msgid "Open"
 msgstr ""

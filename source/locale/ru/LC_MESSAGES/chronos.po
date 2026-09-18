@@ -18,7 +18,7 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: source/extension.js:53 source/extension.js:121
+#: source/extension.js:53 source/extension.js:109
 msgid "Start"
 msgstr "Продолжить"
 
@@ -30,119 +30,131 @@ msgstr "Сброс"
 msgid "Preferences"
 msgstr "Настройки"
 
-#: source/extension.js:121
+#: source/extension.js:109
 msgid "Pause"
 msgstr "Пауза"
 
-#: source/prefs.js:17
+#: source/extension.js:281
+msgid "Chronos Tracker"
+msgstr "Chronos Tracker"
+
+#: source/extension.js:284
+msgid "Time to take a break"
+msgstr "Пора сделать перерыв"
+
+#: source/extension.js:287
+msgid "Postpone..."
+msgstr "Отложить..."
+
+#: source/prefs.js:20
 msgid "Time"
 msgstr "Время"
 
-#: source/prefs.js:28
+#: source/prefs.js:31
 #, fuzzy
 msgid "Adjust tracked time"
 msgstr "Изменить учтенное время"
 
-#: source/prefs.js:30
+#: source/prefs.js:33
 msgid "If tracker is not paused value can be diff with indicator"
 msgstr "Если трекер запущен может быть разница с индикатором"
 
-#: source/prefs.js:39
+#: source/prefs.js:42
 #, fuzzy
 msgid "Reset time"
 msgstr "Сбросить время"
 
-#: source/prefs.js:40
+#: source/prefs.js:43
 msgid "Time that will be set initially on reset"
 msgstr "Время на каторое происходит сброс"
 
-#: source/prefs.js:57
+#: source/prefs.js:60
 msgid "Appearance"
 msgstr "Внешний вид"
 
-#: source/prefs.js:64
+#: source/prefs.js:67
 msgid "Display"
 msgstr "Отображение"
 
-#: source/prefs.js:68
+#: source/prefs.js:71
 msgid "Show seconds"
 msgstr "Показывать секунды"
 
-#: source/prefs.js:77
+#: source/prefs.js:80
 #, fuzzy
 msgid "Colors"
 msgstr "Цвета"
 
-#: source/prefs.js:81
+#: source/prefs.js:84
 msgid "Normal state"
 msgstr "Нормальный"
 
-#: source/prefs.js:87
+#: source/prefs.js:90
 msgid "Paused state"
 msgstr "Пауза"
 
-#: source/prefs.js:107
+#: source/prefs.js:110
 msgid "Behavior"
 msgstr "Поведение"
 
-#: source/prefs.js:116
+#: source/prefs.js:119
 msgid "Pause while screen locked (and other inactive states)"
 msgstr "Пауза при блокеровке (и других случаях неактивности)"
 
-#: source/prefs.js:129
+#: source/prefs.js:132
 msgid "Log changes of time tracker state"
 msgstr "Вести лог изменений состояния трекера"
 
-#: source/prefs.js:142
+#: source/prefs.js:145
 msgid "Start tracker when restart timer"
 msgstr "Запускать трекер при сбросе"
 
-#: source/prefs.js:159
+#: source/prefs.js:162
 msgid "Alarms"
 msgstr "Оповещения"
 
-#: source/prefs.js:166
+#: source/prefs.js:169
 msgid "Take a break alarm"
 msgstr "Сделай перерыв оповещение"
 
-#: source/prefs.js:170
+#: source/prefs.js:180
 msgid "Enable break alarm"
 msgstr "Активировать оповещение о перерыве"
 
-#: source/prefs.js:171
+#: source/prefs.js:181
 msgid "Notify to take a break after a period of tracking"
 msgstr "Оповещать о необходимости сделать перерыв после интервала трекера"
 
-#: source/prefs.js:180
+#: source/prefs.js:188
 msgid "Interval"
 msgstr "Интервал"
 
-#: source/prefs.js:181
+#: source/prefs.js:189
 msgid "Time of non-pause tracking before alarm triggers"
 msgstr "Время активного трекинга до оповещения"
 
-#: source/prefs.js:205
+#: source/prefs.js:221
 msgid "About"
 msgstr ""
 
-#: source/prefs.js:237
+#: source/prefs.js:253
 msgid "Chronos Time Tracker"
 msgstr ""
 
-#: source/prefs.js:241
+#: source/prefs.js:257
 msgid "Description"
 msgstr ""
 
-#: source/prefs.js:243
+#: source/prefs.js:259
 msgid ""
 "Time tracker tool. Track your time, customize display, log start/pause "
 "events."
 msgstr ""
 
-#: source/prefs.js:248
+#: source/prefs.js:264
 msgid "Website"
 msgstr ""
 
-#: source/prefs.js:253
+#: source/prefs.js:269
 msgid "Open"
 msgstr ""
