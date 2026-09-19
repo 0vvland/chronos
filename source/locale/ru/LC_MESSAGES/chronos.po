@@ -18,7 +18,7 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: source/extension.js:87 source/extension.js:280 source/extension.js:678
+#: source/extension.js:87 source/extension.js:284 source/extension.js:739
 msgid "Start"
 msgstr "Продолжить"
 
@@ -30,39 +30,39 @@ msgstr "Сброс"
 msgid "Preferences"
 msgstr "Настройки"
 
-#: source/extension.js:280
+#: source/extension.js:284
 msgid "Pause"
 msgstr "Пауза"
 
-#: source/extension.js:647
+#: source/extension.js:708
 msgid "Chronos Tracker"
 msgstr "Chronos Tracker"
 
-#: source/extension.js:663
+#: source/extension.js:724
 msgid "Time to take a break"
 msgstr "Пора сделать перерыв"
 
-#: source/extension.js:664 source/extension.js:682 source/extension.js:706
+#: source/extension.js:725 source/extension.js:743 source/extension.js:767
 msgid "Postpone..."
 msgstr "Отложить..."
 
-#: source/extension.js:676
+#: source/extension.js:737
 msgid "Time tracking is paused, time to start"
 msgstr "Трекер на паузе, пора начать"
 
-#: source/extension.js:695
+#: source/extension.js:756
 msgid "Not today"
 msgstr "Не сегодня"
 
-#: source/extension.js:704
+#: source/extension.js:765
 msgid "The tracked time target is reached"
 msgstr "Достигнута цель по учтенному времени"
 
-#: source/extension.js:711
+#: source/extension.js:772
 msgid "Select Tracked Time"
 msgstr "Выберите учтенное время"
 
-#: source/extension.js:715
+#: source/extension.js:776
 msgid "Dismiss"
 msgstr "Закрыть"
 

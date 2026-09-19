@@ -8,7 +8,7 @@
     "build": "make build",
     "install": "make install",
     "run": "make run",
-    "lint": "echo 'no linter configured yet'",
+    "lint": "make lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

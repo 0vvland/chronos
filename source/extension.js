@@ -97,8 +97,12 @@ const Chronos = GObject.registerClass(
         'org.gnome.Settings-symbolic',
       );
 
-      this.truncateLog();
-      this.logging('init');
+      // The truncation is asynchronous, so the session's first entry is
+      // written from its continuation. The rest of _init runs before that
+      // continuation does and logs entries of its own, which is what
+      // _pendingLog holds back; see logging().
+      this._pendingLog = [];
+      this.truncateLog(this.flushLog.bind(this));
 
       if (!this._settings.get_boolean('state-paused')) {
         // not paused on destroy
@@ -561,6 +565,11 @@ const Chronos = GObject.registerClass(
         !this._settings.get_boolean('pref-pause-on-destroy')) {
         this._settings.set_uint('state-pause-start-time', getUintTime());
       }
+      // a truncation still in flight never gets its continuation once the
+      // settings go, so anything queued behind it is written out here
+      if (this._pendingLog !== null) {
+        this.flushLog();
+      }
       this.logging('destroy');
       if (this._logOutputStream) {
         this._logOutputStream.close(null);
@@ -581,60 +590,112 @@ const Chronos = GObject.registerClass(
 
     // Runs once per enable, ahead of the first log entry, while nothing holds
     // the file open. Any failure leaves the existing file as it was.
-    truncateLog () {
+    //
+    // Asynchronous end to end: every file call here runs in the compositor
+    // process, where a synchronous read blocks the whole Shell for as long as
+    // the disk takes (EGO-X-004). `done` is called exactly once, on every path
+    // including the failures, and _init defers the session's first log entry
+    // until then - logging() opens an append stream, and an entry appended
+    // before the rewrite lands would be thrown away by it.
+    //
+    // A missing file is not an error worth reporting: there is simply nothing
+    // to truncate, and the failed read creates nothing.
+    truncateLog (done) {
       if (!this._settings.get_boolean('pref-log-change-state')) {
+        done();
         return;
       }
       const limit = this._settings.get_int('pref-log-max-lines');
       if (limit <= 0) {
+        done();
         return;
       }
       const file = this.getLogFile();
-      if (!file.query_exists(null)) {
-        return;
-      }
-      try {
-        const [ok, contents] = file.load_contents(null);
-        if (!ok) {
+      file.load_contents_async(null, (_file, result) => {
+        // disable() beat the read home; the indicator no longer owns anything
+        // to log with, and the file is better left as it is
+        if (this._settings === null) {
           return;
         }
-        const lines = new TextDecoder().decode(contents).split('\n');
-        // every entry ends in '\n', so the split leaves a trailing empty
-        // element that is not a line
-        if (lines[lines.length - 1] === '') {
-          lines.pop();
+        try {
+          const [ok, contents] = file.load_contents_finish(result);
+          if (!ok) {
+            done();
+            return;
+          }
+          const lines = new TextDecoder().decode(contents).split('\n');
+          // every entry ends in '\n', so the split leaves a trailing empty
+          // element that is not a line
+          if (lines[lines.length - 1] === '') {
+            lines.pop();
+          }
+          if (lines.length <= limit) {
+            done();
+            return;
+          }
+          const kept = lines.slice(lines.length - limit)
+            .map((line) => `${line}\n`)
+            .join('');
+          // atomic: the file is either the old content or the new one
+          file.replace_contents_bytes_async(
+            new GLib.Bytes(kept), null, false, Gio.FileCreateFlags.NONE, null,
+            (_f, replaceResult) => {
+              try {
+                file.replace_contents_finish(replaceResult);
+              } catch (error) {
+                console.error('Chronos: could not truncate the log file',
+                  error);
+              }
+              if (this._settings !== null) {
+                done();
+              }
+            });
+        } catch (error) {
+          if (!error.matches?.(Gio.IOErrorEnum, Gio.IOErrorEnum.NOT_FOUND)) {
+            console.error('Chronos: could not read the log file', error);
+          }
+          done();
         }
-        if (lines.length <= limit) {
-          return;
-        }
-        const kept = lines.slice(lines.length - limit)
-          .map((line) => `${line}\n`)
-          .join('');
-        // atomic: the file is either the old content or the new one
-        file.replace_contents(new TextEncoder().encode(kept), null, false,
-          Gio.FileCreateFlags.NONE, null);
-      } catch (error) {
-        console.error('Chronos: could not truncate the log file', error);
-      }
+      });
     }
 
+    // An entry logged while truncateLog() still has the file in flight is
+    // queued rather than appended: the rewrite would throw the append away.
+    // The line is built when the event happens, so queuing never moves an
+    // entry's timestamp or its tracked time.
     logging (event) {
       if (!this._settings.get_boolean('pref-log-change-state')) {
         return;
-      }
-      if (!this._logOutputStream) {
-        this._logOutputStream = this.getLogFile()
-          .append_to(Gio.FileCreateFlags.NONE, null);
       }
       // the explicit format string, never format_iso8601(): that one appends
       // microseconds and renders the offset as '+03' rather than '+03:00'
       const isoDate = GLib.DateTime.new_now_local()
         .format('%Y-%m-%dT%H:%M:%S%:z');
+      const line = `${isoDate}: [${event}] ${this.getTrackedTime()}\n`;
 
-      const bytes = new GLib.Bytes(
-        `${isoDate}: [${event}] ${this.getTrackedTime()}\n`,
-      );
-      this._logOutputStream.write_bytes(bytes, null);
+      if (this._pendingLog !== null) {
+        this._pendingLog.push(line);
+        return;
+      }
+      this.writeLogLine(line);
+    }
+
+    writeLogLine (line) {
+      if (!this._logOutputStream) {
+        this._logOutputStream = this.getLogFile()
+          .append_to(Gio.FileCreateFlags.NONE, null);
+      }
+      this._logOutputStream.write_bytes(new GLib.Bytes(line), null);
+    }
+
+    // The truncation has settled: the file may now be appended to. The
+    // session's own first entry goes in ahead of whatever the rest of _init
+    // logged while the read was in flight.
+    flushLog () {
+      const pending = this._pendingLog;
+      this._pendingLog = null;
+      this.logging('init');
+      pending.forEach((line) => this.writeLogLine(line));
     }
 
     // Rendering only: the three alarms share a title and an icon and nothing

@@ -61,13 +61,37 @@ has to stay usable, so the off switch gets its own boolean key.
 
 | Command | What it runs |
 |---|---|
-| `make build` | update PO → zip to `.shell-extension.zip` |
+| `make build` | update PO → zip to `.shell-extension.zip` → `make lint` |
+| `make lint` | shexli static analysis of the packaged zip (EGO review rules) |
 | `make install` | build + `gnome-extensions install --force` |
 | `make run` | build + install + nested Shell via `dbus-run-session` |
 | `make launch` | `dbus-run-session -- gnome-shell --devkit` |
 
 Schemas are not compiled by the build: `gnome-extensions install` compiles them
 on install (Shell 50).
+
+## Quality Gate
+
+`make build` ends in **`make lint`**, which runs [shexli](https://pypi.org/project/shexli/)
+— a static analyzer for the EGO review guidelines — over the *packaged zip*, not
+`source/`. The zip is what reviewers see, and the build-artifact rules
+(`EGO-P-006`) only mean anything after `distr` has stripped the `.po`/`.pot`
+files and `gschemas.compiled`; pointed at `source/` the same run reports three
+findings that never ship.
+
+Setup is automatic: the target bootstraps `.venv-shexli/` on first use
+(gitignored). Two pins matter — `tree-sitter<0.26`, because 0.26 segfaults
+against the 0.25 ABI `tree-sitter-javascript` was built with, and an *absolute*
+path argument, because a relative one crashes shexli in its path mapper.
+
+shexli always exits 0 — it reports, it does not judge. The verdict comes from
+**`tools/shexli-gate.py`**, which fails on every finding except the waivers
+listed in its `WAIVED` table. Waivers are keyed by rule *and file*, never by
+line, so they survive edits above the finding and a new violation of the same
+rule elsewhere still fails the build. Two are waived today, both `enable()`
+teardown rules (`EGO-L-003`, `EGO-L-004`) that miss Chronos' teardown split —
+see Gotcha 7. **A waiver needs a reason in the table**, and a finding that is
+actually a defect gets fixed rather than listed.
 
 ## Screenshots
 

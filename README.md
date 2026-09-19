@@ -103,7 +103,13 @@ Notes on the alarms:
 | `make run` | `build` + `install` + nested Shell session for testing |
 | `make launch` | Nested `gnome-shell --devkit` session only |
 | `make reload` | Disable/enable the extension in the running Shell |
+| `make lint` | shexli static analysis of the packed zip against the EGO review guidelines |
 | `npm run typecheck` | `tsc --noEmit` against the GJS type stubs |
+
+`make build` runs `make lint` as its last step and fails on any finding that is
+not an explained waiver. The linter installs itself into `.venv-shexli/` on
+first use — see [development.md](development.md) if you want it outside the
+build.
 
 Source layout: `source/extension.js` (panel indicator, timing, notifications),
 `source/prefs.js` (preferences pages), `source/components/` (reusable rows and

@@ -8,7 +8,10 @@ SHELL    := /bin/bash
 
 .DEFAULT_GOAL := all
 
-.PHONY: all build clean install launch reload run update_po distr
+.PHONY: all build clean install launch reload run update_po distr lint
+
+SHEXLI_VENV := .venv-shexli
+SHEXLI      := $(SHEXLI_VENV)/bin/shexli
 
 all: build
 
@@ -36,13 +39,33 @@ update_po: source/chronos.pot
 # ── package ────────────────────────────────────────────────────
 
 distr:
+	# zip -r updates an existing archive rather than replacing it, so a file
+	# dropped from the build would otherwise live on in the shipped zip
+	$(RM) -f $(ZIPFILE)
 	$(RM) -r build/
 	cp -R source build
-	find build -type f \( -name '*.po' -o -name '*.po~' -o -name '*.pot' -o -name '*.pot~' \) -delete
+	# gschemas.compiled is a local build artifact: gnome-extensions install
+	# compiles the schema itself, and shipping it is an EGO review warning
+	find build -type f \( -name '*.po' -o -name '*.po~' -o -name '*.pot' -o -name '*.pot~' -o -name 'gschemas.compiled' \) -delete
 	cd build && zip -qr ../$(ZIPFILE) .
 	$(RM) -r build/
 
-build: update_po distr
+# ── quality gate ───────────────────────────────────────────────
+
+$(SHEXLI):
+	python3 -m venv $(SHEXLI_VENV)
+	# tree-sitter 0.26 segfaults against tree-sitter-javascript's 0.25 ABI,
+	# which is what shexli's own floor resolves to
+	$(SHEXLI_VENV)/bin/pip install -q shexli 'tree-sitter<0.26'
+
+# Gates the packaged zip, not source/: that is what EGO reviews, and the
+# build-artifact rules only make sense against what actually ships.
+# shexli needs an absolute path — a relative one crashes it.
+lint: $(SHEXLI)
+	@test -f $(ZIPFILE) || $(MAKE) distr
+	$(SHEXLI) $(CURDIR)/$(ZIPFILE) --format json | python3 tools/shexli-gate.py
+
+build: update_po distr lint
 
 # ── install / reload / launch ─────────────────────────────────
 
