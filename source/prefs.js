@@ -1,12 +1,43 @@
 import Adw from 'gi://Adw';
 import GObject from 'gi://GObject';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+import Gtk from 'gi://Gtk';
 import {
   ExtensionPreferences,
   gettext as _,
 } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import { TimeRow } from './components/TimeRow.js';
 import { ColorRow } from './components/ColorRow.js';
+import { WeekdayRow } from './components/WeekdayRow.js';
+
+// Offered when the break alarm is switched on without a stored interval
+const DEFAULT_BREAK_INTERVAL = 3600;
+
+// Offered when log truncation is switched on without a stored limit
+const DEFAULT_LOG_MAX_LINES = 150;
+
+const DEFAULT_START_DAYS = [1, 2, 3, 4, 5];
+
+// times of day and the delay stay inside one day: 00:00 to 23:59
+const TIME_OF_DAY_BOUNDS = { hoursLower: 0, hoursUpper: 23 };
+
+// Release notes for the About page, newest release first — array order is
+// display order. A version bump prepends a record; published entries are never
+// rewritten. A thunk, so _() runs when the page is built, not at module load.
+const CHANGELOG = () => [
+  {
+    version: 16,
+    changes: [
+      _('Break alarm: a reminder after a stretch of uninterrupted tracking'),
+      _('Start tracking reminder: a nudge when tracking stays paused during working hours'),
+      _('Goal alarm: a notification when tracked time reaches your target'),
+      _('Postpone dialog shared by the alarms, to put a reminder off for a while'),
+      _('Log line limit: the log file can be capped to a number of lines'),
+      _('About page with the extension description and website link'),
+    ],
+  },
+];
 
 // Page Adjust time
 const AdjustTimePage = GObject.registerClass(
@@ -134,6 +165,51 @@ const BehaviorPage = GObject.registerClass(
 
       groupLogging.add(switchLogging);
 
+      // 'pref-log-max-lines' of 0 means never truncate, so the switch is not
+      // bound to a key: it writes 0 or the last limit the user chose
+      const storedMaxLines = this.settings.get_int('pref-log-max-lines');
+      this._logMaxLines = storedMaxLines > 0
+        ? storedMaxLines
+        : DEFAULT_LOG_MAX_LINES;
+
+      const switchLogTruncate = new Adw.SwitchRow({
+        title: _('Limit log file size'),
+        subtitle: _('Keep only the newest lines, trimmed when the extension starts'),
+        active: storedMaxLines > 0,
+      });
+
+      groupLogging.add(switchLogTruncate);
+
+      // minimum of 1, so 0 is reachable only through the switch
+      const maxLinesRow = new Adw.SpinRow({
+        title: _('Lines to keep'),
+        adjustment: new Gtk.Adjustment({
+          lower: 1,
+          upper: 1000000,
+          step_increment: 10,
+          page_increment: 100,
+          value: this._logMaxLines,
+        }),
+      });
+
+      maxLinesRow.connect('notify::value', () => {
+        if (maxLinesRow.value > 0) {
+          this._logMaxLines = maxLinesRow.value;
+        }
+        if (switchLogTruncate.active) {
+          this.settings.set_int('pref-log-max-lines', maxLinesRow.value);
+        }
+      });
+
+      maxLinesRow.visible = switchLogTruncate.active;
+      switchLogTruncate.connect('notify::active', () => {
+        maxLinesRow.visible = switchLogTruncate.active;
+        this.settings.set_int('pref-log-max-lines',
+          switchLogTruncate.active ? this._logMaxLines : 0);
+      });
+
+      groupLogging.add(maxLinesRow);
+
       this.add(groupLogging);
 
       const groupStartOnReset = new Adw.PreferencesGroup();
@@ -150,6 +226,306 @@ const BehaviorPage = GObject.registerClass(
   },
 );
 
+// Page Alarms
+const AlarmsPage = GObject.registerClass(
+  class ChronosAlarmsPrefPage extends Adw.PreferencesPage {
+    _init (settings) {
+      super._init({
+        title: _('Alarms'),
+        icon_name: 'alarm-symbolic',
+        name: 'ChronosAlarmsPrefPage',
+      });
+      this.settings = settings;
+
+      const groupBreakAlarm = new Adw.PreferencesGroup({
+        title: _('Take a break alarm'),
+      });
+
+      // 'pref-break-alarm-interval' of 0 means the alarm is off, so the switch
+      // is not bound to a key: it writes 0 or the last interval the user chose
+      const storedInterval = this.settings.get_int('pref-break-alarm-interval');
+      this._breakInterval = storedInterval > 0
+        ? storedInterval
+        : DEFAULT_BREAK_INTERVAL;
+
+      const switchBreakAlarm = new Adw.SwitchRow({
+        title: _('Enable break alarm'),
+        subtitle: _('Notify to take a break after a period of tracking'),
+        active: storedInterval > 0,
+      });
+
+      groupBreakAlarm.add(switchBreakAlarm);
+
+      const intervalRow = new TimeRow({
+        title: _('Interval'),
+        subtitle: _('Time of non-pause tracking before alarm triggers'),
+        value: this._breakInterval,
+      });
+
+      intervalRow.connect('notify::value', () => {
+        if (intervalRow.value > 0) {
+          this._breakInterval = intervalRow.value;
+        }
+        if (switchBreakAlarm.active) {
+          this.settings.set_int('pref-break-alarm-interval', intervalRow.value);
+        }
+      });
+
+      intervalRow.visible = switchBreakAlarm.active;
+      switchBreakAlarm.connect('notify::active', () => {
+        intervalRow.visible = switchBreakAlarm.active;
+        this.settings.set_int('pref-break-alarm-interval',
+          switchBreakAlarm.active ? this._breakInterval : 0);
+      });
+
+      groupBreakAlarm.add(intervalRow);
+
+      this.add(groupBreakAlarm);
+
+      const groupStartAlarm = new Adw.PreferencesGroup({
+        title: _('Start tracking reminder'),
+      });
+
+      // an empty 'pref-start-alarm-days' means the alarm is off, so the switch
+      // is not bound to a key: it writes an empty array or the last selection
+      const storedDays = this.settings.get_value('pref-start-alarm-days')
+        .deep_unpack();
+      this._startDays = storedDays.length > 0
+        ? storedDays
+        : DEFAULT_START_DAYS;
+
+      const switchStartAlarm = new Adw.SwitchRow({
+        title: _('Enable start tracking reminder'),
+        subtitle: _(
+          'Notify when the tracker stays paused during working hours'),
+        active: storedDays.length > 0,
+      });
+
+      groupStartAlarm.add(switchStartAlarm);
+
+      const daysRow = new WeekdayRow({
+        title: _('Days'),
+        subtitle: _('Weekdays the reminder is active on'),
+        value: this._startDays,
+      });
+
+      // Gio.Settings.bind does not handle array properties, so wire it by hand
+      daysRow.connect('notify::value', () => {
+        if (daysRow.value.length > 0) {
+          this._startDays = daysRow.value;
+        }
+        if (switchStartAlarm.active) {
+          this.settings.set_value('pref-start-alarm-days',
+            new GLib.Variant('ai', daysRow.value));
+        }
+      });
+
+      groupStartAlarm.add(daysRow);
+
+      const fromRow = new TimeRow({
+        title: _('From'),
+        subtitle: _('Time of day the reminder becomes active'),
+        ...TIME_OF_DAY_BOUNDS,
+      });
+
+      this.settings.bind('pref-start-alarm-from', fromRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupStartAlarm.add(fromRow);
+
+      const toRow = new TimeRow({
+        title: _('To'),
+        subtitle: _('Time of day the reminder stops being active'),
+        ...TIME_OF_DAY_BOUNDS,
+      });
+
+      this.settings.bind('pref-start-alarm-to', toRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupStartAlarm.add(toRow);
+
+      const delayRow = new TimeRow({
+        title: _('Delay'),
+        subtitle: _('Time of pause inside the timeframe before alarm triggers'),
+        ...TIME_OF_DAY_BOUNDS,
+      });
+
+      this.settings.bind('pref-start-alarm-delay', delayRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupStartAlarm.add(delayRow);
+
+      const timeframeWarning = new Adw.ActionRow({
+        title: _('The reminder is inactive'),
+        subtitle: _('"To" must be later than "From"'),
+      });
+      timeframeWarning.add_prefix(new Gtk.Image({
+        icon_name: 'dialog-warning-symbolic',
+      }));
+
+      groupStartAlarm.add(timeframeWarning);
+
+      const startAlarmRows = [daysRow, fromRow, toRow, delayRow];
+
+      const refreshStartAlarmRows = () => {
+        startAlarmRows.forEach((row) => {
+          row.visible = switchStartAlarm.active;
+        });
+        timeframeWarning.visible = switchStartAlarm.active &&
+          toRow.value <= fromRow.value;
+      };
+
+      fromRow.connect('notify::value', refreshStartAlarmRows);
+      toRow.connect('notify::value', refreshStartAlarmRows);
+
+      switchStartAlarm.connect('notify::active', () => {
+        this.settings.set_value('pref-start-alarm-days',
+          new GLib.Variant('ai',
+            switchStartAlarm.active ? this._startDays : []));
+        refreshStartAlarmRows();
+      });
+
+      refreshStartAlarmRows();
+
+      this.add(groupStartAlarm);
+
+      const groupGoalAlarm = new Adw.PreferencesGroup({
+        title: _('Tracked time goal'),
+      });
+
+      // unlike the other two alarms every target value is usable, 0:00 and
+      // negative included, so the switch binds to a key of its own
+      const switchGoalAlarm = new Adw.SwitchRow({
+        title: _('Enable tracked time goal alarm'),
+        subtitle: _('Notify when the tracked time reaches the target'),
+      });
+
+      this.settings.bind('pref-goal-alarm-enabled', switchGoalAlarm, 'active',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupGoalAlarm.add(switchGoalAlarm);
+
+      // default hour bounds, so a negative target stays reachable
+      const goalTimeRow = new TimeRow({
+        title: _('Target'),
+        subtitle: _('Tracked time at which the alarm triggers'),
+      });
+
+      this.settings.bind('pref-goal-alarm-time', goalTimeRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupGoalAlarm.add(goalTimeRow);
+
+      goalTimeRow.visible = switchGoalAlarm.active;
+      switchGoalAlarm.connect('notify::active', () => {
+        goalTimeRow.visible = switchGoalAlarm.active;
+      });
+
+      this.add(groupGoalAlarm);
+    }
+  },
+);
+
+// Page About
+const AboutPage = GObject.registerClass(
+  class ChronosAboutPrefPage extends Adw.PreferencesPage {
+    _init (settings, extensionDir) {
+      super._init({
+        title: _('About'),
+        icon_name: 'help-about-symbolic',
+        name: 'ChronosAboutPrefPage',
+      });
+      this.settings = settings;
+
+      const groupLogo = new Adw.PreferencesGroup();
+
+      const logoBox = new Gtk.Box({
+        orientation: Gtk.Orientation.VERTICAL,
+        halign: Gtk.Align.CENTER,
+        valign: Gtk.Align.CENTER,
+        margin_top: 24,
+        margin_bottom: 24,
+      });
+      logoBox.set_size_request(96, 144);
+      const cssProvider = new Gtk.CssProvider();
+      cssProvider.load_from_string('box { background: white; border-radius: 12px; padding: 16px; }');
+      logoBox.get_style_context().add_provider(cssProvider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);
+
+      const logoFile = extensionDir.get_child('logo.svg');
+      const logoPicture = Gtk.Picture.new_for_file(logoFile);
+      logoPicture.set_halign(Gtk.Align.FILL);
+      logoPicture.set_valign(Gtk.Align.FILL);
+      logoPicture.set_hexpand(true);
+      logoPicture.set_vexpand(true);
+      logoPicture.set_keep_aspect_ratio(true);
+      logoBox.append(logoPicture);
+
+      groupLogo.add(logoBox);
+
+      const groupWhatsNew = new Adw.PreferencesGroup({
+        title: _('What\'s New'),
+      });
+
+      const changelogLabel = new Gtk.Label({
+        wrap: true,
+        xalign: 0,
+        use_markup: true,
+        margin_top: 12,
+        margin_bottom: 12,
+        margin_start: 12,
+        margin_end: 12,
+        label: CHANGELOG().map(({ version, changes }) => [
+          `<b>${GLib.markup_escape_text(`Version ${version}`, -1)}</b>`,
+          ...changes.map(
+            (change) => `• ${GLib.markup_escape_text(change, -1)}`),
+        ].join('\n')).join('\n\n'),
+      });
+
+      const changelogScroller = new Gtk.ScrolledWindow({
+        height_request: 180,
+        max_content_height: 180,
+        propagate_natural_height: true,
+        vscrollbar_policy: Gtk.PolicyType.AUTOMATIC,
+        hscrollbar_policy: Gtk.PolicyType.NEVER,
+        child: changelogLabel,
+      });
+
+      groupWhatsNew.add(changelogScroller);
+
+      const groupInfo = new Adw.PreferencesGroup({
+        title: _('Chronos Time Tracker'),
+      });
+
+      const descriptionRow = new Adw.ActionRow({
+        title: _('Description'),
+        subtitle: _(
+          'Time tracker tool. Track your time, customize display, log start/pause events.'
+        ),
+      });
+
+      const urlRow = new Adw.ActionRow({
+        title: _('Website'),
+        subtitle: 'https://github.com/0vvland/chronos',
+      });
+
+      const linkButton = new Gtk.LinkButton({
+        label: _('Open'),
+        uri: 'https://github.com/0vvland/chronos',
+        valign: Gtk.Align.CENTER,
+      });
+      urlRow.add_suffix(linkButton);
+      urlRow.activatable_widget = linkButton;
+
+      groupInfo.add(descriptionRow);
+      groupInfo.add(urlRow);
+
+      this.add(groupLogo);
+      this.add(groupWhatsNew);
+      this.add(groupInfo);
+    }
+  },
+);
+
 export default class ChronosPreferences extends ExtensionPreferences {
   fillPreferencesWindow (window) {
     const settings = this.getSettings();
@@ -157,9 +533,13 @@ export default class ChronosPreferences extends ExtensionPreferences {
     const pageAdjustTime = new AdjustTimePage(settings);
     const pageAppearance = new AppearancePage(settings);
     const pageBehavior = new BehaviorPage(settings);
+    const pageAlarms = new AlarmsPage(settings);
+    const pageAbout = new AboutPage(settings, this.dir);
 
     window.add(pageAdjustTime);
     window.add(pageAppearance);
     window.add(pageBehavior);
+    window.add(pageAlarms);
+    window.add(pageAbout);
   }
 }

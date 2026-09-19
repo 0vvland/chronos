@@ -33,6 +33,11 @@
             <summary>Logging</summary>
             <description>Log changes of time tracker state</description>
         </key>
+        <key name="pref-log-max-lines" type="i">
+            <default>0</default>
+            <summary>Log line limit</summary>
+            <description>Maximum number of lines kept in the log file, the oldest lines are dropped at enable, 0 means never truncate</description>
+        </key>
         <key name="pref-start-on-reset" type="b">
             <default>false</default>
             <summary>Start on restart</summary>
@@ -52,6 +57,46 @@
             <default>0</default>
             <summary>Reset time</summary>
             <description>Used to store time that will set initially on reset</description>
+        </key>
+        <key name="pref-break-alarm-interval" type="i">
+            <default>0</default>
+            <summary>Break alarm interval</summary>
+            <description>Interval in seconds of non-pause tracking time before alarm triggers, 0 disables the alarm</description>
+        </key>
+        <key name="pref-start-alarm-days" type="ai">
+            <default>[]</default>
+            <summary>Start alarm weekdays</summary>
+            <description>Weekdays the start tracking alarm is active on, 0 = Sunday ... 6 = Saturday, an empty array disables the alarm</description>
+        </key>
+        <key name="pref-start-alarm-from" type="i">
+            <default>32400</default>
+            <summary>Start alarm timeframe opening</summary>
+            <description>Time of day the start alarm timeframe opens, in seconds since local midnight</description>
+        </key>
+        <key name="pref-start-alarm-to" type="i">
+            <default>64800</default>
+            <summary>Start alarm timeframe closing</summary>
+            <description>Time of day the start alarm timeframe closes, in seconds since local midnight, the alarm is inactive when it is not later than the opening</description>
+        </key>
+        <key name="pref-start-alarm-delay" type="i">
+            <default>900</default>
+            <summary>Start alarm delay</summary>
+            <description>Time in seconds the tracker may stay paused inside the timeframe before the alarm triggers</description>
+        </key>
+        <key name="pref-goal-alarm-enabled" type="b">
+            <default>false</default>
+            <summary>Goal alarm enabled</summary>
+            <description>Set to true to notify when the cumulative tracked time reaches the goal target, the target value itself never disables the alarm</description>
+        </key>
+        <key name="pref-goal-alarm-time" type="i">
+            <default>28800</default>
+            <summary>Goal alarm target</summary>
+            <description>Cumulative tracked time in seconds at which the goal alarm triggers, zero and negative targets are valid because the tracked time may be negative</description>
+        </key>
+        <key name="state-start-alarm-dismissed" type="i">
+            <default>0</default>
+            <summary>Start alarm dismissed day</summary>
+            <description>Local calendar day the start alarm was dismissed for, as YYYYMMDD, 0 means never dismissed</description>
         </key>
     </schema>
 </schemalist>
