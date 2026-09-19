@@ -8,6 +8,14 @@ GNOME Shell extension (uuid: `chronos@time-tracker.com`), GJS, targets Shell 45�
 
 `prefs.js` → `ChronosPreferences` fills 3 Adw pages (Time, Appearance, Behavior), each a `GObject.registerClass` subclass of `Adw.PreferencesPage`.
 
+The About page carries a *What's New* changelog between the logo and the
+description, rendered from the `CHANGELOG` thunk near the top of `prefs.js` into
+one markup label inside a bounded `Gtk.ScrolledWindow`. **A version bump means
+prepending a release record** — newest first, each change its own `_()` literal
+so `xgettext` extracts it — and published entries are never rewritten. Version
+headings are formatted from the integer, so no version number ever becomes a
+translatable message.
+
 Reusable components in `source/components/`: `TimeRow` (HH:MM spin buttons), `ColorRow` (Gtk color picker), `PostponeDialog` (Shell modal dialog with activity list).
 
 ## GSettings Keys

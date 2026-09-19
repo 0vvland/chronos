@@ -22,6 +22,23 @@ const DEFAULT_START_DAYS = [1, 2, 3, 4, 5];
 // times of day and the delay stay inside one day: 00:00 to 23:59
 const TIME_OF_DAY_BOUNDS = { hoursLower: 0, hoursUpper: 23 };
 
+// Release notes for the About page, newest release first — array order is
+// display order. A version bump prepends a record; published entries are never
+// rewritten. A thunk, so _() runs when the page is built, not at module load.
+const CHANGELOG = () => [
+  {
+    version: 16,
+    changes: [
+      _('Break alarm: a reminder after a stretch of uninterrupted tracking'),
+      _('Start tracking reminder: a nudge when tracking stays paused during working hours'),
+      _('Goal alarm: a notification when tracked time reaches your target'),
+      _('Postpone dialog shared by the alarms, to put a reminder off for a while'),
+      _('Log line limit: the log file can be capped to a number of lines'),
+      _('About page with the extension description and website link'),
+    ],
+  },
+];
+
 // Page Adjust time
 const AdjustTimePage = GObject.registerClass(
   class ChronosAdjustTimePrefPage extends Adw.PreferencesPage {
@@ -445,6 +462,36 @@ const AboutPage = GObject.registerClass(
 
       groupLogo.add(logoBox);
 
+      const groupWhatsNew = new Adw.PreferencesGroup({
+        title: _('What\'s New'),
+      });
+
+      const changelogLabel = new Gtk.Label({
+        wrap: true,
+        xalign: 0,
+        use_markup: true,
+        margin_top: 12,
+        margin_bottom: 12,
+        margin_start: 12,
+        margin_end: 12,
+        label: CHANGELOG().map(({ version, changes }) => [
+          `<b>${GLib.markup_escape_text(`Version ${version}`, -1)}</b>`,
+          ...changes.map(
+            (change) => `• ${GLib.markup_escape_text(change, -1)}`),
+        ].join('\n')).join('\n\n'),
+      });
+
+      const changelogScroller = new Gtk.ScrolledWindow({
+        height_request: 180,
+        max_content_height: 180,
+        propagate_natural_height: true,
+        vscrollbar_policy: Gtk.PolicyType.AUTOMATIC,
+        hscrollbar_policy: Gtk.PolicyType.NEVER,
+        child: changelogLabel,
+      });
+
+      groupWhatsNew.add(changelogScroller);
+
       const groupInfo = new Adw.PreferencesGroup({
         title: _('Chronos Time Tracker'),
       });
@@ -473,6 +520,7 @@ const AboutPage = GObject.registerClass(
       groupInfo.add(urlRow);
 
       this.add(groupLogo);
+      this.add(groupWhatsNew);
       this.add(groupInfo);
     }
   },
