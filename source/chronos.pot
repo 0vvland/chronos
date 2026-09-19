@@ -16,51 +16,51 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: source/extension.js:69 source/extension.js:141 source/extension.js:490
+#: source/extension.js:70 source/extension.js:142 source/extension.js:501
 msgid "Start"
 msgstr ""
 
-#: source/extension.js:73
+#: source/extension.js:74
 msgid "Restart"
 msgstr ""
 
-#: source/extension.js:77
+#: source/extension.js:78
 msgid "Preferences"
 msgstr ""
 
-#: source/extension.js:141
+#: source/extension.js:142
 msgid "Pause"
 msgstr ""
 
-#: source/extension.js:461 source/extension.js:485 source/extension.js:519
+#: source/extension.js:472 source/extension.js:496 source/extension.js:530
 msgid "Chronos Tracker"
 msgstr ""
 
-#: source/extension.js:464
+#: source/extension.js:475
 msgid "Time to take a break"
 msgstr ""
 
-#: source/extension.js:467 source/extension.js:494 source/extension.js:524
+#: source/extension.js:478 source/extension.js:505 source/extension.js:535
 msgid "Postpone..."
 msgstr ""
 
-#: source/extension.js:487
+#: source/extension.js:498
 msgid "Time tracking is paused, time to start"
 msgstr ""
 
-#: source/extension.js:507
+#: source/extension.js:518
 msgid "Not today"
 msgstr ""
 
-#: source/extension.js:521
+#: source/extension.js:532
 msgid "The tracked time target is reached"
 msgstr ""
 
-#: source/extension.js:529
+#: source/extension.js:540
 msgid "Select Tracked Time"
 msgstr ""
 
-#: source/extension.js:533
+#: source/extension.js:544
 msgid "Dismiss"
 msgstr ""
 

@@ -72,4 +72,4 @@ on install (Shell 50).
 4. **Negative time:** `state-tracked-time` can go negative (the `-` prefix appears in the label). `TimeRow` hours spin goes down to -999 to support this.
 5. **`Chronos` is paused when `_startTime === null`** (getter `isPaused`). Not a boolean flag — pauses set `_startTime = null`, resumes set it to `getUintTime()`.
 6. **`onReset` behavior:** sets tracked time to `pref-reset-time` value, then if not paused (or `pref-start-on-reset` is true) also resets `_startTime` — meaning it starts counting from *now* on top of the reset value. If paused and `pref-start-on-reset=false`, it just sets the value without starting.
-7. **`this?.destroy()`** on line 221 — optional chaining on `this` is suspicious but preserved from original code.
+7. **Teardown split:** `onDestroy()` releases everything the indicator owns (timeout source, `changed` signal, log stream) and `disable()` then calls `destroy()` on the actor. Anything created in `_init` needs a matching release in `onDestroy` — the EGO linter (EGO-L-002/003/004) checks for it.

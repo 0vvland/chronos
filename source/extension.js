@@ -51,7 +51,8 @@ const Chronos = GObject.registerClass(
       this._settings = this._extention.getSettings();
       this.set_style_class_name('panel-button');
 
-      this._settings.connect('changed', this.onChangeSettings.bind(this));
+      this._settingsChangedId = this._settings.connect('changed',
+        this.onChangeSettings.bind(this));
 
       this._label = new St.Label({
         text: 'Loading...',
@@ -365,8 +366,12 @@ const Chronos = GObject.registerClass(
       this.refreshIndicatorLabel();
     }
 
+    // Full teardown, run from disable() before the actor itself is destroyed.
     onDestroy () {
-      GLib.Source.remove(this._timeout);
+      if (this._timeout) {
+        GLib.Source.remove(this._timeout);
+        this._timeout = null;
+      }
       this.storeCountedTime();
       this._settings.set_boolean('state-paused', this.isPaused);
       if (!this.isPaused &&
@@ -376,8 +381,14 @@ const Chronos = GObject.registerClass(
       this.logging('destroy');
       if (this._logOutputStream) {
         this._logOutputStream.close(null);
+        this._logOutputStream = null;
       }
-      this?.destroy();
+      if (this._settingsChangedId) {
+        this._settings.disconnect(this._settingsChangedId);
+        this._settingsChangedId = null;
+      }
+      this._settings = null;
+      this._extention = null;
     }
 
     getLogFile () {
@@ -549,6 +560,7 @@ export default class ChronosExtension extends Extension {
 
   disable () {
     this._indicator.onDestroy();
+    this._indicator.destroy();
     this._indicator = null;
   }
 }
