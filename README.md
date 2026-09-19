@@ -114,12 +114,5 @@ Translations live in `source/locale/<lang>/LC_MESSAGES/`. To add a language,
 copy `source/chronos.pot`, translate it, and run `make build` to compile.
 
 ## Plans (ToDo)
-
-### Changes
-
-- flexible timer ticks: no timer when on pause, 1 min and 1 sec timer (depend on settings) - spare resources
-
-### Extension
-
-- pause on screen lock with delay time (like small breaks)
-- auto restart: new day, new session (if possible)
+- more flexible timer ticks: 1 min and 1 sec timer (depend on view settings) - spare resources
+- code optimization

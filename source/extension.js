@@ -18,6 +18,10 @@ import { PostponeDialog, formatPostponeTime } from './components/PostponeDialog.
 
 const getUintTime = (ms = Date.now()) => Math.floor(ms / 1000);
 
+// coupled to the one-second tick period: it is what separates "accumulated
+// about a tick's worth" from "somebody else wrote the counter". Lengthening
+// the period without raising this would read every ordinary step as an
+// external jump and the goal alarm would never fire.
 const TICK_TOLERANCE = 5;
 
 const Chronos = GObject.registerClass(
@@ -47,6 +51,9 @@ const Chronos = GObject.registerClass(
       this._lastGoalTracked = 0;
       // in the anchoring rule, so unlocking never alerts immediately
       this._enabledAt = getUintTime();
+      // null - unless the matching periodic source is currently armed
+      this._timeout = null;
+      this._pollTimeout = null;
       this._extention = extention;
       this._settings = this._extention.getSettings();
       this.set_style_class_name('panel-button');
@@ -108,32 +115,83 @@ const Chronos = GObject.registerClass(
       this._lastGoalTracked = this.getTrackedSeconds();
       this._goalFired = this._lastGoalTracked >= this.getGoalTarget();
 
-      this._timeout = GLib.timeout_add(1000, GLib.PRIORITY_LOW, () => {
-        // every 2 collected minutes store them
-        if (getUintTime() - this._startTime > 60 * 2) {
-          this.storeCountedTime();
-        }
-        this.refreshIndicatorLabel();
+      this._ensureTick();
 
-        if (this._breakDeadline !== null && getUintTime() >= this._breakDeadline) {
-          this._breakDeadline = null;
-          this.showNotification();
-        }
-
-        const now = new Date();
-        if (this.isStartAlarmEligible(now) &&
-          getUintTime(now.getTime()) >= this.getStartDeadline(now)) {
-          this._startAlarmFired = true;
-          this._startDeadline = null;
-          this.showStartNotification();
-        }
-
-        this.checkGoalAlarm();
-
-        return true;
-      });
-
+      // the tick may not be running at all, so the label cannot wait a second
+      // for its first value
+      this.refreshIndicatorLabel();
       this.updateIndicatorStyle();
+    }
+
+    // The one-second source exists only while needsTick() holds. Arming is
+    // idempotent and happens from many sites; removal belongs to the callback
+    // alone, because removing a GSource from inside its own callback with
+    // GLib.Source.remove() is how GJS double-frees.
+    _ensureTick () {
+      if (this._timeout === null && this.needsTick()) {
+        this._timeout = GLib.timeout_add(1000, GLib.PRIORITY_LOW,
+          this.onTick.bind(this));
+      }
+      this._ensurePoll();
+    }
+
+    // The 60-second re-arming poll: all that runs while paused with a start
+    // alarm set for today that merely cannot fire yet. Never armed alongside
+    // the one-second tick - the tick's own tail arms it on standing down.
+    _ensurePoll () {
+      if (this._pollTimeout !== null || this._timeout !== null ||
+        !this.needsPoll()) {
+        return;
+      }
+      this._pollTimeout = GLib.timeout_add_seconds(60, GLib.PRIORITY_LOW,
+        () => {
+          // needsPoll() re-derives the weekday and the time of day from a
+          // fresh Date on every pass and holds no precomputed deadline, so a
+          // suspend, a timezone change or a DST transition cannot shift or
+          // lose the opening
+          this._ensureTick();
+          if (this._timeout !== null || !this.needsPoll()) {
+            this._pollTimeout = null;
+            return GLib.SOURCE_REMOVE;
+          }
+          return GLib.SOURCE_CONTINUE;
+        });
+    }
+
+    onTick () {
+      // every 2 collected minutes store them - only while counting, since the
+      // tick also runs through a paused start-alarm window and _startTime is
+      // null there
+      if (!this.isPaused && getUintTime() - this._startTime > 60 * 2) {
+        this.storeCountedTime();
+      }
+      this.refreshIndicatorLabel();
+
+      if (this._breakDeadline !== null && getUintTime() >= this._breakDeadline) {
+        this._breakDeadline = null;
+        this.showNotification();
+      }
+
+      const now = new Date();
+      if (this.isStartAlarmEligible(now) &&
+        getUintTime(now.getTime()) >= this.getStartDeadline(now)) {
+        this._startAlarmFired = true;
+        this._startDeadline = null;
+        this.showStartNotification();
+      }
+
+      // deliberately not skipped during the paused window: tracked time is
+      // frozen so the step is zero, and the call keeps _lastGoalTracked
+      // current - otherwise a preferences edit made during the pause would
+      // read as accumulation on the first tick after resume
+      this.checkGoalAlarm();
+
+      if (!this.needsTick()) {
+        this._timeout = null;
+        this._ensurePoll();
+        return GLib.SOURCE_REMOVE;
+      }
+      return GLib.SOURCE_CONTINUE;
     }
 
     updateIndicatorStyle () {
@@ -163,30 +221,64 @@ const Chronos = GObject.registerClass(
         date.getDate();
     }
 
-    // Everything is derived from local time on each call, so the timeframe
-    // follows the wall clock across midnight, DST and suspend/resume
-    isStartAlarmEligible (date = new Date()) {
+    // The day-level half of the start alarm's conditions: the alarm is set up
+    // for this weekday, the timeframe is a real interval, and the day has not
+    // been dismissed. Nothing here depends on the time of day or on whether
+    // the alarm has already fired, which is what lets the 60-second poll ask
+    // "is there anything to wait for today?" without duplicating the test.
+    isStartAlarmConfiguredToday (date = new Date()) {
       const days = this._settings.get_value('pref-start-alarm-days')
         .deep_unpack();
       if (days.length === 0 || !days.includes(date.getDay())) {
-        return false;
-      }
-      if (!this.isPaused || this._startAlarmFired) {
         return false;
       }
       if (this._settings.get_int('state-start-alarm-dismissed') ===
         this.getLocalDay(date)) {
         return false;
       }
-      const from = this._settings.get_int('pref-start-alarm-from');
-      const to = this._settings.get_int('pref-start-alarm-to');
-      if (to <= from) {
+      return this._settings.get_int('pref-start-alarm-to') >
+        this._settings.get_int('pref-start-alarm-from');
+    }
+
+    // Everything is derived from local time on each call, so the timeframe
+    // follows the wall clock across midnight, DST and suspend/resume
+    isStartAlarmEligible (date = new Date()) {
+      if (!this.isStartAlarmConfiguredToday(date)) {
         return false;
       }
+      if (!this.isPaused || this._startAlarmFired) {
+        return false;
+      }
+      const from = this._settings.get_int('pref-start-alarm-from');
+      const to = this._settings.get_int('pref-start-alarm-to');
       const secondsOfDay = date.getHours() * 3600 +
         date.getMinutes() * 60 +
         date.getSeconds();
       return secondsOfDay >= from && secondsOfDay < to;
+    }
+
+    // Whether anything the one-second tick does can produce a different
+    // result. The start alarm is asked with the very expression that fires it,
+    // so the two cannot drift; the other consumers need no term of their own:
+    //
+    //   | consumer           | why the predicate already covers it            |
+    //   |--------------------|------------------------------------------------|
+    //   | flush + indicator  | only move while counting, so !isPaused         |
+    //   | break alarm        | _breakDeadline nulled in onPause, armed on      |
+    //   |                    | onResume                                        |
+    //   | goal alarm         | driven by tracked time, frozen while paused     |
+    //
+    // A consumer added to the tick body that needs a wake-up outside those
+    // terms has to add its own here, or it will work while tracking and
+    // quietly fail while paused.
+    needsTick () {
+      return !this.isPaused || this.isStartAlarmEligible();
+    }
+
+    // A start alarm is set for today but cannot fire yet - the one case where
+    // standing the tick down still leaves something to wait for
+    needsPoll () {
+      return !this.needsTick() && this.isStartAlarmConfiguredToday();
     }
 
     // deadline = max(pauseStart, enabledAt, timeframeOpenToday) + delay,
@@ -314,6 +406,7 @@ const Chronos = GObject.registerClass(
       this.logging('pause');
       this.updateIndicatorStyle();
       this._settings.set_boolean('state-paused', true);
+      this._ensureTick();
     }
 
     onResume () {
@@ -330,6 +423,7 @@ const Chronos = GObject.registerClass(
       this.logging('start');
       this.updateIndicatorStyle();
       this._settings.set_boolean('state-paused', false);
+      this._ensureTick();
     }
 
     onReset () {
@@ -349,6 +443,7 @@ const Chronos = GObject.registerClass(
         }
       }
       this.updateIndicatorStyle();
+      this._ensureTick();
     }
 
     onChangeSettings (event) {
@@ -364,13 +459,21 @@ const Chronos = GObject.registerClass(
         this.updateIndicatorStyle();
       }
       this.refreshIndicatorLabel();
+      // a no-op whenever the right source is already armed, which is what the
+      // extension's own two-minute 'state-tracked-time' write re-enters here
+      this._ensureTick();
     }
 
     // Full teardown, run from disable() before the actor itself is destroyed.
     onDestroy () {
-      if (this._timeout) {
+      // either source may have removed itself already
+      if (this._timeout !== null) {
         GLib.Source.remove(this._timeout);
         this._timeout = null;
+      }
+      if (this._pollTimeout !== null) {
+        GLib.Source.remove(this._pollTimeout);
+        this._pollTimeout = null;
       }
       this.storeCountedTime();
       this._settings.set_boolean('state-paused', this.isPaused);
@@ -511,6 +614,9 @@ const Chronos = GObject.registerClass(
         const dialog = new PostponeDialog(options, (selected) => {
           this._startDeadline = getUintTime() + selected;
           this._startAlarmFired = false;
+          // the tick stood down when the alarm fired, and clearing the flag
+          // above is the only thing that makes it eligible again
+          this._ensureTick();
         });
         dialog.open();
       });
