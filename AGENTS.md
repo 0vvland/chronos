@@ -30,6 +30,12 @@ Reusable components in `source/components/`: `TimeRow` (HH:MM spin buttons), `Co
 | `pref-start-alarm-to` | int | 64800 | Timeframe closing; `<= from` = inactive |
 | `pref-start-alarm-delay` | int | 900 | Paused seconds inside timeframe before alerting |
 | `state-start-alarm-dismissed` | int | 0 | Local day dismissed for, `YYYYMMDD`; 0 = never |
+| `pref-goal-alarm-enabled` | bool | false | Goal alarm on/off — an explicit flag, not a sentinel |
+| `pref-goal-alarm-time` | int | 28800 | Tracked-time target in seconds; 0 and negative are valid targets |
+
+The goal alarm deliberately departs from the `0`/`[]` "off" sentinel the break
+and start alarms use: every target value — including `0:00` and negative ones —
+has to stay usable, so the off switch gets its own boolean key.
 
 ## Build Commands
 

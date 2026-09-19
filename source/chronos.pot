@@ -16,40 +16,52 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: source/extension.js:61 source/extension.js:125 source/extension.js:389
+#: source/extension.js:72 source/extension.js:143 source/extension.js:451
 msgid "Start"
 msgstr ""
 
-#: source/extension.js:65
+#: source/extension.js:76
 msgid "Restart"
 msgstr ""
 
-#: source/extension.js:69
+#: source/extension.js:80
 msgid "Preferences"
 msgstr ""
 
-#: source/extension.js:125
+#: source/extension.js:143
 msgid "Pause"
 msgstr ""
 
-#: source/extension.js:360 source/extension.js:384
+#: source/extension.js:422 source/extension.js:446 source/extension.js:480
 msgid "Chronos Tracker"
 msgstr ""
 
-#: source/extension.js:363
+#: source/extension.js:425
 msgid "Time to take a break"
 msgstr ""
 
-#: source/extension.js:366 source/extension.js:393
+#: source/extension.js:428 source/extension.js:455 source/extension.js:485
 msgid "Postpone..."
 msgstr ""
 
-#: source/extension.js:386
+#: source/extension.js:448
 msgid "Time tracking is paused, time to start"
 msgstr ""
 
-#: source/extension.js:406
+#: source/extension.js:468
 msgid "Not today"
+msgstr ""
+
+#: source/extension.js:482
+msgid "The tracked time target is reached"
+msgstr ""
+
+#: source/extension.js:490
+msgid "Select Tracked Time"
+msgstr ""
+
+#: source/extension.js:494
+msgid "Dismiss"
 msgstr ""
 
 #: source/prefs.js:27
@@ -188,29 +200,49 @@ msgstr ""
 msgid "\"To\" must be later than \"From\""
 msgstr ""
 
+#: source/prefs.js:328
+msgid "Tracked time goal"
+msgstr ""
+
+#: source/prefs.js:334
+msgid "Enable tracked time goal alarm"
+msgstr ""
+
 #: source/prefs.js:335
+msgid "Notify when the tracked time reaches the target"
+msgstr ""
+
+#: source/prefs.js:345
+msgid "Target"
+msgstr ""
+
+#: source/prefs.js:346
+msgid "Tracked time at which the alarm triggers"
+msgstr ""
+
+#: source/prefs.js:369
 msgid "About"
 msgstr ""
 
-#: source/prefs.js:367
+#: source/prefs.js:401
 msgid "Chronos Time Tracker"
 msgstr ""
 
-#: source/prefs.js:371
+#: source/prefs.js:405
 msgid "Description"
 msgstr ""
 
-#: source/prefs.js:373
+#: source/prefs.js:407
 msgid ""
 "Time tracker tool. Track your time, customize display, log start/pause "
 "events."
 msgstr ""
 
-#: source/prefs.js:378
+#: source/prefs.js:412
 msgid "Website"
 msgstr ""
 
-#: source/prefs.js:383
+#: source/prefs.js:417
 msgid "Open"
 msgstr ""
 

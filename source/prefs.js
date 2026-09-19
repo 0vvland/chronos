@@ -323,6 +323,40 @@ const AlarmsPage = GObject.registerClass(
       refreshStartAlarmRows();
 
       this.add(groupStartAlarm);
+
+      const groupGoalAlarm = new Adw.PreferencesGroup({
+        title: _('Tracked time goal'),
+      });
+
+      // unlike the other two alarms every target value is usable, 0:00 and
+      // negative included, so the switch binds to a key of its own
+      const switchGoalAlarm = new Adw.SwitchRow({
+        title: _('Enable tracked time goal alarm'),
+        subtitle: _('Notify when the tracked time reaches the target'),
+      });
+
+      this.settings.bind('pref-goal-alarm-enabled', switchGoalAlarm, 'active',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupGoalAlarm.add(switchGoalAlarm);
+
+      // default hour bounds, so a negative target stays reachable
+      const goalTimeRow = new TimeRow({
+        title: _('Target'),
+        subtitle: _('Tracked time at which the alarm triggers'),
+      });
+
+      this.settings.bind('pref-goal-alarm-time', goalTimeRow, 'value',
+        Gio.SettingsBindFlags.DEFAULT);
+
+      groupGoalAlarm.add(goalTimeRow);
+
+      goalTimeRow.visible = switchGoalAlarm.active;
+      switchGoalAlarm.connect('notify::active', () => {
+        goalTimeRow.visible = switchGoalAlarm.active;
+      });
+
+      this.add(groupGoalAlarm);
     }
   },
 );

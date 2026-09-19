@@ -18,6 +18,8 @@ import { PostponeDialog, formatPostponeTime } from './components/PostponeDialog.
 
 const getUintTime = (ms = Date.now()) => Math.floor(ms / 1000);
 
+const TICK_TOLERANCE = 5;
+
 const Chronos = GObject.registerClass(
   class Chronos extends PanelMenu.Button {
 
@@ -37,6 +39,12 @@ const Chronos = GObject.registerClass(
       this._pauseStartTime = getUintTime();
       // the start alarm fires at most once per idle period
       this._startAlarmFired = false;
+      // the goal alarm fires at most once per target reached
+      this._goalFired = false;
+      // null - unless a postponement overrides the configured goal target
+      this._goalDeadline = null;
+      // tracked seconds seen on the previous tick, seeded at the end of _init
+      this._lastGoalTracked = 0;
       // in the anchoring rule, so unlocking never alerts immediately
       this._enabledAt = getUintTime();
       this._extention = extention;
@@ -93,6 +101,11 @@ const Chronos = GObject.registerClass(
         this._breakDeadline = this.getBreakDeadline();
       }
 
+      // seeded after the recovered time has been folded in, so the first tick
+      // sees no step - and so an enable above the target starts out fired
+      this._lastGoalTracked = this.getTrackedSeconds();
+      this._goalFired = this._lastGoalTracked >= this.getGoalTarget();
+
       this._timeout = GLib.timeout_add(1000, GLib.PRIORITY_LOW, () => {
         // every 2 collected minutes store them
         if (getUintTime() - this._startTime > 60 * 2) {
@@ -112,6 +125,8 @@ const Chronos = GObject.registerClass(
           this._startDeadline = null;
           this.showStartNotification();
         }
+
+        this.checkGoalAlarm();
 
         return true;
       });
@@ -191,12 +206,56 @@ const Chronos = GObject.registerClass(
       return anchor + this._settings.get_int('pref-start-alarm-delay');
     }
 
-    getTrackedTime () {
-      let trackedTime = this._settings.get_int('state-tracked-time');
-      if (!this.isPaused) {
-        const extraCountedTime = getUintTime() - this._startTime;
-        trackedTime += extraCountedTime;
+    // a reading of the counter, not a moment in time, unless a postponement
+    // pinned an explicit one - which is likewise on the counter's scale
+    getGoalTarget () {
+      if (this._goalDeadline !== null) {
+        return this._goalDeadline;
       }
+      return this._settings.get_int('pref-goal-alarm-time');
+    }
+
+    // stored tracked time plus whatever has not been flushed to it yet
+    getTrackedSeconds () {
+      const trackedTime = this._settings.get_int('state-tracked-time');
+      if (this.isPaused) {
+        return trackedTime;
+      }
+      return trackedTime + (getUintTime() - this._startTime);
+    }
+
+    // Only accumulation raises the alarm. Every other writer of the counter -
+    // a preferences edit, a restart, the suspend-gap recovery - moves it by
+    // more than a tick's worth and is re-synchronised silently instead.
+    checkGoalAlarm () {
+      const tracked = this.getTrackedSeconds();
+      if (!this._settings.get_boolean('pref-goal-alarm-enabled')) {
+        // kept current while off, so switching on is not read as a jump
+        this._lastGoalTracked = tracked;
+        return;
+      }
+      const step = tracked - this._lastGoalTracked;
+      if (step >= 0 && step <= TICK_TOLERANCE) {
+        const target = this.getGoalTarget();
+        if (tracked < target) {
+          // below the target the alarm is pending, so raising the target past
+          // the counter re-arms it
+          this._goalFired = false;
+        } else if (this._lastGoalTracked < target && !this._goalFired) {
+          this._goalFired = true;
+          // a later re-arm uses the configured target again
+          this._goalDeadline = null;
+          this.showGoalNotification();
+        }
+      } else {
+        this._goalDeadline = null;
+        this._goalFired = tracked >= this.getGoalTarget();
+      }
+      this._lastGoalTracked = tracked;
+    }
+
+    getTrackedTime () {
+      let trackedTime = this.getTrackedSeconds();
       const isNegative = trackedTime < 0;
       trackedTime = Math.abs(trackedTime);
       const hours = Math.floor(trackedTime / 3600);
@@ -406,6 +465,31 @@ const Chronos = GObject.registerClass(
       notification.addAction(_('Not today'), () => {
         this._settings.set_int('state-start-alarm-dismissed',
           this.getLocalDay());
+      });
+
+      source.addNotification(notification);
+    }
+
+    showGoalNotification () {
+      const source = getSystemSource();
+      const notification = new Notification({
+        source: source,
+        title: _('Chronos Tracker'),
+        iconName: 'appointment-new-symbolic',
+        body: _('The tracked time target is reached'),
+      });
+
+      notification.addAction(_('Postpone...'), () => {
+        // measured in tracked time, so a pause does not consume it
+        const dialog = new PostponeDialog([300, 900, 1800], (selected) => {
+          this._goalDeadline = this.getTrackedSeconds() + selected;
+          this._goalFired = false;
+        }, _('Select Tracked Time'));
+        dialog.open();
+      });
+
+      notification.addAction(_('Dismiss'), () => {
+        notification.destroy();
       });
 
       source.addNotification(notification);

@@ -6,7 +6,8 @@ Chronos time tracker
 
 A GNOME Shell extension that tracks your working time from the top panel:
 one click to start or pause, a running counter in the panel, and alarms that
-remind you to take a break — or to start tracking when you forgot to.
+remind you to take a break, to start tracking when you forgot to, or to stop
+once you have hit your daily target.
 
 Supports GNOME Shell 45–50.
 
@@ -21,6 +22,9 @@ Supports GNOME Shell 45–50.
   tracking, with a *Postpone…* dialog
 - **Start tracking reminder** — a notification when the tracker stays paused
   inside your working hours, with *Start*, *Postpone…* and *Not today* actions
+- **Tracked time goal** — a notification when the cumulative counter reaches
+  your target (e.g. 8:00), with a *Postpone…* dialog measured in further
+  tracked time
 - **Appearance** — separate colors for the running and paused states, optional
   seconds in the indicator
 - **Lock/suspend handling** — optionally pause tracking while the screen is
@@ -71,6 +75,8 @@ which is handy for counting time owed down against a daily target.
 | Alarms | Enable start tracking reminder | off | Turning it on preselects Mon–Fri |
 | Alarms | Days, From, To | Mon–Fri, 9:00, 18:00 | *To* must be later than *From*, otherwise the reminder is inactive |
 | Alarms | Delay | 0:15 | Paused time inside the timeframe before alerting |
+| Alarms | Enable tracked time goal alarm | off | Has its own switch, so every target stays usable |
+| Alarms | Target | 8:00 | Tracked time at which the alarm triggers |
 
 Notes on the alarms:
 
@@ -79,6 +85,12 @@ Notes on the alarms:
   immediately after login: the delay is counted from the latest of the pause,
   the moment the extension was enabled, and the opening of the timeframe.
 - *Not today* silences the start reminder until the next calendar day.
+- The goal alarm is raised only by time you actually tracked: editing the
+  counter, restarting, or recovering time spent locked moves it past the target
+  silently. It fires once per target, and postponing it waits for that much
+  *further tracking* — a pause does not consume the postponement.
+- The goal alarm's switch is separate from its target because the counter can
+  be negative, so `0:00` and negative targets have to stay usable.
 
 ### Development
 
@@ -103,11 +115,10 @@ copy `source/chronos.pot`, translate it, and run `make build` to compile.
 
 ### Changes
 
-- flexible timer: no timer on pause, 1 min and 1 sec timer (depend on settings) - spare resources
+- flexible timer ticks: no timer when on pause, 1 min and 1 sec timer (depend on settings) - spare resources
 
 ### Extension
 
 - truncate log to limit size
-- alarm on particular tracked time
 - pause on screen lock with delay time (like small breaks)
 - auto restart: new day, new session (if possible)

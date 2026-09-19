@@ -78,6 +78,16 @@
             <summary>Start alarm delay</summary>
             <description>Time in seconds the tracker may stay paused inside the timeframe before the alarm triggers</description>
         </key>
+        <key name="pref-goal-alarm-enabled" type="b">
+            <default>false</default>
+            <summary>Goal alarm enabled</summary>
+            <description>Set to true to notify when the cumulative tracked time reaches the goal target, the target value itself never disables the alarm</description>
+        </key>
+        <key name="pref-goal-alarm-time" type="i">
+            <default>28800</default>
+            <summary>Goal alarm target</summary>
+            <description>Cumulative tracked time in seconds at which the goal alarm triggers, zero and negative targets are valid because the tracked time may be negative</description>
+        </key>
         <key name="state-start-alarm-dismissed" type="i">
             <default>0</default>
             <summary>Start alarm dismissed day</summary>

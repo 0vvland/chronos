@@ -27,7 +27,7 @@ export const formatPostponeTime = (seconds) => {
 export const PostponeDialog = GObject.registerClass({
   GTypeName: 'PostponeDialog',
 }, class PostponeDialog extends ModalDialog.ModalDialog {
-  _init(options, callback) {
+  _init(options, callback, heading = 'Select Duration') {
     super._init({styleClass: 'chronos-modal-dialog'});
     this._callback = callback;
 
@@ -39,7 +39,7 @@ export const PostponeDialog = GObject.registerClass({
     this.contentLayout.add_child(box);
 
     box.add_child(new St.Label({
-      text: 'Select Duration',
+      text: heading,
       style_class: 'modal-dialog-title',
       style: 'font-weight: bold; margin-bottom: 15px;',
     }));
