@@ -125,3 +125,4 @@ copy `source/chronos.pot`, translate it, and run `make build` to compile.
 - middle-click toggle The pitch is "one click to start or pause"; one middle-click on the indicator skips the menu entirely
 - Alarm urgency / persistence The three notifications use default urgency, so a break alarm is easy to miss in fullscreen or Do Not Disturb. A per-alarm "urgent" option (Notification.urgency = CRITICAL, which stays on screen until acted on) makes the alarms actually do their job. Small, but it's the difference between a reminder and a suggestion
 - Projects / multiple timers. It breaks "one counter" and drags in a data model, a picker UI, and per-project history
+-e2e tests
