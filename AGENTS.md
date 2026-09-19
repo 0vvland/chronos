@@ -20,6 +20,7 @@ Reusable components in `source/components/`: `TimeRow` (HH:MM spin buttons), `Co
 | `pref-pause-on-destroy` | bool | true | Pause on lock/suspend |
 | `pref-show-seconds` | bool | false | Show seconds in indicator |
 | `pref-log-change-state` | bool | false | Log to ~/timeTrack.log |
+| `pref-log-max-lines` | int | 0 | Lines kept in the log file, trimmed at enable; 0 = off |
 | `pref-start-on-reset` | bool | false | Auto-start after reset |
 | `pref-indicator-color` | string | `'rgb(51, 209, 122)'` | Active color |
 | `pref-indicator-paused-color` | string | `'rgb(237, 51, 59)'` | Paused color |

@@ -29,7 +29,8 @@ Supports GNOME Shell 45–50.
   seconds in the indicator
 - **Lock/suspend handling** — optionally pause tracking while the screen is
   locked; when disabled, time spent locked or suspended is recovered on resume
-- **Logging** — append every state change to `~/timeTrack.log`
+- **Logging** — append every state change to `~/timeTrack.log`, optionally
+  capped to a number of lines, trimmed to the newest ones on every start
 - **Localisation** — English and Russian
 
 ### Install
@@ -70,6 +71,7 @@ which is handy for counting time owed down against a daily target.
 | Appearance | Normal / Paused state color | green / red | Indicator colors |
 | Behavior | Pause while screen locked | on | Off = time while locked is counted |
 | Behavior | Log changes of time tracker state | off | Appends to `~/timeTrack.log` |
+| Behavior | Limit log file size, Lines to keep | off, 150 | Oldest lines dropped when the extension starts |
 | Behavior | Start tracker when restart timer | off | *Restart* also resumes tracking |
 | Alarms | Enable break alarm, Interval | off, 1:00 | Alerts after that much uninterrupted tracking |
 | Alarms | Enable start tracking reminder | off | Turning it on preselects Mon–Fri |
@@ -119,6 +121,5 @@ copy `source/chronos.pot`, translate it, and run `make build` to compile.
 
 ### Extension
 
-- truncate log to limit size
 - pause on screen lock with delay time (like small breaks)
 - auto restart: new day, new session (if possible)

@@ -84,6 +84,7 @@ const Chronos = GObject.registerClass(
         this._settings.get_string('pref-indicator-paused-color'),
       ];
 
+      this.truncateLog();
       this.logging('init');
 
       if (!this._settings.get_boolean('state-paused')) {
@@ -379,16 +380,57 @@ const Chronos = GObject.registerClass(
       this?.destroy();
     }
 
+    getLogFile () {
+      return Gio.File.new_for_path(
+        GLib.build_filenamev([GLib.get_home_dir(), 'timeTrack.log']));
+    }
+
+    // Runs once per enable, ahead of the first log entry, while nothing holds
+    // the file open. Any failure leaves the existing file as it was.
+    truncateLog () {
+      if (!this._settings.get_boolean('pref-log-change-state')) {
+        return;
+      }
+      const limit = this._settings.get_int('pref-log-max-lines');
+      if (limit <= 0) {
+        return;
+      }
+      const file = this.getLogFile();
+      if (!file.query_exists(null)) {
+        return;
+      }
+      try {
+        const [ok, contents] = file.load_contents(null);
+        if (!ok) {
+          return;
+        }
+        const lines = new TextDecoder().decode(contents).split('\n');
+        // every entry ends in '\n', so the split leaves a trailing empty
+        // element that is not a line
+        if (lines[lines.length - 1] === '') {
+          lines.pop();
+        }
+        if (lines.length <= limit) {
+          return;
+        }
+        const kept = lines.slice(lines.length - limit)
+          .map((line) => `${line}\n`)
+          .join('');
+        // atomic: the file is either the old content or the new one
+        file.replace_contents(new TextEncoder().encode(kept), null, false,
+          Gio.FileCreateFlags.NONE, null);
+      } catch (error) {
+        console.error('Chronos: could not truncate the log file', error);
+      }
+    }
+
     logging (event) {
       if (!this._settings.get_boolean('pref-log-change-state')) {
         return;
       }
       if (!this._logOutputStream) {
-        const filepath = GLib.build_filenamev(
-          [GLib.get_home_dir(), 'timeTrack.log']);
-        const file = Gio.File.new_for_path(filepath);
-
-        this._logOutputStream = file.append_to(Gio.FileCreateFlags.NONE, null);
+        this._logOutputStream = this.getLogFile()
+          .append_to(Gio.FileCreateFlags.NONE, null);
       }
       const date = new Date();
       const tzo = -date.getTimezoneOffset();

@@ -14,6 +14,9 @@ import { WeekdayRow } from './components/WeekdayRow.js';
 // Offered when the break alarm is switched on without a stored interval
 const DEFAULT_BREAK_INTERVAL = 3600;
 
+// Offered when log truncation is switched on without a stored limit
+const DEFAULT_LOG_MAX_LINES = 150;
+
 const DEFAULT_START_DAYS = [1, 2, 3, 4, 5];
 
 // times of day and the delay stay inside one day: 00:00 to 23:59
@@ -144,6 +147,51 @@ const BehaviorPage = GObject.registerClass(
         Gio.SettingsBindFlags.DEFAULT);
 
       groupLogging.add(switchLogging);
+
+      // 'pref-log-max-lines' of 0 means never truncate, so the switch is not
+      // bound to a key: it writes 0 or the last limit the user chose
+      const storedMaxLines = this.settings.get_int('pref-log-max-lines');
+      this._logMaxLines = storedMaxLines > 0
+        ? storedMaxLines
+        : DEFAULT_LOG_MAX_LINES;
+
+      const switchLogTruncate = new Adw.SwitchRow({
+        title: _('Limit log file size'),
+        subtitle: _('Keep only the newest lines, trimmed when the extension starts'),
+        active: storedMaxLines > 0,
+      });
+
+      groupLogging.add(switchLogTruncate);
+
+      // minimum of 1, so 0 is reachable only through the switch
+      const maxLinesRow = new Adw.SpinRow({
+        title: _('Lines to keep'),
+        adjustment: new Gtk.Adjustment({
+          lower: 1,
+          upper: 1000000,
+          step_increment: 10,
+          page_increment: 100,
+          value: this._logMaxLines,
+        }),
+      });
+
+      maxLinesRow.connect('notify::value', () => {
+        if (maxLinesRow.value > 0) {
+          this._logMaxLines = maxLinesRow.value;
+        }
+        if (switchLogTruncate.active) {
+          this.settings.set_int('pref-log-max-lines', maxLinesRow.value);
+        }
+      });
+
+      maxLinesRow.visible = switchLogTruncate.active;
+      switchLogTruncate.connect('notify::active', () => {
+        maxLinesRow.visible = switchLogTruncate.active;
+        this.settings.set_int('pref-log-max-lines',
+          switchLogTruncate.active ? this._logMaxLines : 0);
+      });
+
+      groupLogging.add(maxLinesRow);
 
       this.add(groupLogging);
 
