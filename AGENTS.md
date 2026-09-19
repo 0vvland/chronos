@@ -6,7 +6,18 @@ GNOME Shell extension (uuid: `chronos@time-tracker.com`), GJS, targets Shell 45�
 
 `extension.js` → `Chronos` (`PanelMenu.Button`) added to `Main.panel`. 1‑second `GLib.timeout_add_seconds` drives label refresh + periodic `storeCountedTime()`. State in GSettings (`state-tracked-time`, `state-paused`, `state-pause-start-time`).
 
-`prefs.js` → `ChronosPreferences` fills 3 Adw pages (Time, Appearance, Behavior), each a `GObject.registerClass` subclass of `Adw.PreferencesPage`.
+`prefs.js` → `ChronosPreferences` fills 5 Adw pages (Time, Appearance, Behavior,
+Alarms, About), each a `GObject.registerClass` subclass of
+`Adw.PreferencesPage`.
+
+Three preferences have no room in their key for an "off" state and use a
+sentinel value instead — `0` for the break interval and the log line limit, `[]`
+for the start-alarm weekdays. All three go through **`bindSentinelSwitch()`** at
+the top of `prefs.js`: the switch is deliberately *not* bound to the key, it
+writes either the sentinel or the last live value the user chose, and it hides
+the value row while off. A fourth such preference wires itself up through the
+same helper rather than copying the shape again. The goal alarm is the
+exception and binds a boolean key of its own; see the note under the key table.
 
 The About page carries a *What's New* changelog between the logo and the
 description, rendered from the `CHANGELOG` thunk near the top of `prefs.js` into
@@ -16,7 +27,7 @@ so `xgettext` extracts it — and published entries are never rewritten. Version
 headings are formatted from the integer, so no version number ever becomes a
 translatable message.
 
-Reusable components in `source/components/`: `TimeRow` (HH:MM spin buttons), `ColorRow` (Gtk color picker), `PostponeDialog` (Shell modal dialog with activity list).
+Reusable components in `source/components/`: `TimeRow` (HH:MM spin buttons), `ColorRow` (Gtk color picker), `WeekdayRow` (Mon-first toggle buttons), `PostponeDialog` (Shell modal dialog with activity list).
 
 ## GSettings Keys
 
@@ -88,6 +99,24 @@ HOME=$TH GSETTINGS_BACKEND=keyfile MUTTER_DEBUG_DUMMY_MODE_SPECS=1280x720 \
 The driver gets the indicator handed to it, logs with a greppable prefix
 (`log('CHRONOSTEST ...')`), and the results are read back out of `/tmp/shell.log`.
 
+- **The Shell downloads the *published* release over the build under test.**
+  A few seconds after startup it runs its extension update check, finds Chronos
+  on extensions.gnome.org, unzips the release into `extension-updates/` and
+  applies it — so the spliced driver vanishes and the run produces no output at
+  all, with nothing in the log to say why. Stamp the check as already done
+  before launching: `touch $TH/.local/share/gnome-shell/update-check-50`
+  (the suffix is the Shell major).
+- **`--nested` does not exist**; the flag is `--devkit`.
+- **`log()` may not reach the captured stderr.** `printerr()` does, and writing
+  the results to a file with `GLib.file_set_contents` survives whatever the
+  Shell does to its log handlers on the way out.
+- **The prefs pages need no Shell at all.** They are plain GTK/Adwaita, so
+  `prefs.js` can be driven headlessly in a gjs process against the three-method
+  shim in [screenshots.md](screenshots.md) — construct the pages, walk the
+  widget tree by row title, toggle switches and assert on GSettings. Run it
+  under `GSETTINGS_BACKEND=memory` so it starts from schema defaults and cannot
+  touch the real configuration. This is how `bindSentinelSwitch()` was checked,
+  and it takes a second rather than the nested Shell's minute.
 - **`Shell.Eval` is refused** — `global.context.unsafe_mode` is `false` and
   there is no way to flip it from outside. Driving the extension over D-Bus is
   a dead end; splice the driver in instead.
@@ -134,3 +163,13 @@ rewrite and the teardown findings were settled.
 8. **One pass, one instant.** `onTick()` opens with `takeInstant()` and threads that record (`date`, `uintTime`, `trackedSeconds`, `configuredToday`) through everything it calls, so a pass reads the clock exactly once. The date methods — `getLocalDay`, `isStartAlarmConfiguredToday`, `isStartAlarmEligible`, `getStartDeadline` — deliberately have **no `date = new Date()` default**: that default is what previously let `needsTick()` construct a second, later instant thirteen lines after the first. A caller outside a pass (a notification action, the poll) builds its own instant. The record is a local value that dies with the pass — never store it or anything derived from it on `this`.
    - **`isStartAlarmEligible()` is exempt from the hoisting half of that rule.** It folds in `_startAlarmFired`, which the pass itself flips when the alarm fires, and the second answer is *required* to differ — that flip is what stands the tick down. It must be asked again at the tail of the pass, from the pass's instant. Hoisting it is silent: everything keeps working and the machine simply never sleeps. Its day-level half, `isStartAlarmConfiguredToday()`, folds in nothing the pass can change and *is* memoised on the record — as a thunk, so a counting tracker never pays its four GSettings reads.
 9. **`GLib.timeout_add*` takes `(priority, interval)`, in that order.** Reversing them is silent, because `GLib.PRIORITY_LOW` is `300` and reads as a plausible millisecond interval: the tick once ran at 300 ms instead of 1 s, and the "60-second" poll at 300 s.
+10. **A key the tick path reads belongs in `readCachedSettings()`.** The two
+    indicator colors, `pref-show-seconds` and `pref-goal-alarm-enabled` are held
+    on `this` and refreshed from the `changed` signal, never re-read per pass —
+    otherwise a counting tracker pays a GSettings round trip a second for values
+    that change a handful of times a day. Reading such a key live inside
+    `onTick()`/`getTrackedTime()`/`checkGoalAlarm()` works and is simply
+    wasteful; caching one *without* adding it to `readCachedSettings()` is the
+    failure that bites — the preference silently stops taking effect until the
+    next enable. `state-tracked-time` is deliberately excluded: the preferences
+    page writes it behind the extension's back, so it stays a live read.

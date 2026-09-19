@@ -2,24 +2,33 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 import Clutter from 'gi://Clutter';
 import * as ModalDialog from 'resource:///org/gnome/shell/ui/modalDialog.js';
+import {
+  gettext as _,
+  ngettext,
+} from 'resource:///org/gnome/shell/extensions/extension.js';
+
+// Each unit carries its own ngettext call rather than an English '+s': plural
+// rules differ per language, and several have more than two forms. The calls
+// live in thunks so the strings are translated when a dialog is built, not at
+// module load, by which time the extension has bound its domain.
+const UNITS = [
+  { secs: 86400, plural: (n) => ngettext('%d day', '%d days', n) },
+  { secs: 3600, plural: (n) => ngettext('%d hour', '%d hours', n) },
+  { secs: 60, plural: (n) => ngettext('%d minute', '%d minutes', n) },
+  { secs: 1, plural: (n) => ngettext('%d second', '%d seconds', n) },
+];
 
 export const formatPostponeTime = (seconds) => {
-  const units = [
-    {label: 'day', secs: 86400},
-    {label: 'hour', secs: 3600},
-    {label: 'minute', secs: 60},
-  ];
   const parts = [];
   let rest = seconds;
-  for (const unit of units) {
+  for (const unit of UNITS) {
     const count = Math.floor(rest / unit.secs);
-    if (count > 0) {
-      parts.push(`${count} ${unit.label}${count !== 1 ? 's' : ''}`);
+    // seconds are the last unit, and carry the whole remainder - including a
+    // remainder of zero, when it is the only thing there is to say
+    if (count > 0 || (unit.secs === 1 && parts.length === 0)) {
+      parts.push(unit.plural(count).format(count));
       rest -= count * unit.secs;
     }
-  }
-  if (rest > 0 || parts.length === 0) {
-    parts.push(`${rest} second${rest !== 1 ? 's' : ''}`);
   }
   return parts.join(' ');
 };
@@ -27,11 +36,11 @@ export const formatPostponeTime = (seconds) => {
 export const PostponeDialog = GObject.registerClass({
   GTypeName: 'PostponeDialog',
 }, class PostponeDialog extends ModalDialog.ModalDialog {
-  _init(options, callback, heading = 'Select Duration') {
-    super._init({styleClass: 'chronos-modal-dialog'});
+  _init (options, callback, heading = _('Select Duration')) {
+    super._init();
     this._callback = callback;
 
-    let box = new St.BoxLayout({
+    const box = new St.BoxLayout({
       vertical: true,
       style_class: 'modal-dialog-content-box',
       style: 'min-width: 300px; padding: 10px;',
@@ -44,20 +53,20 @@ export const PostponeDialog = GObject.registerClass({
       style: 'font-weight: bold; margin-bottom: 15px;',
     }));
 
-    let scrollView = new St.ScrollView({
+    const scrollView = new St.ScrollView({
       hscrollbar_policy: St.PolicyType.NEVER,
       vscrollbar_policy: St.PolicyType.AUTOMATIC,
       style: 'max-height: 300px;',
     });
     box.add_child(scrollView);
 
-    let listBox = new St.BoxLayout({vertical: true});
+    const listBox = new St.BoxLayout({ vertical: true });
     scrollView.set_child(listBox);
 
-    options.forEach(option => {
-      let btn = new St.Button({
+    options.forEach((option) => {
+      const btn = new St.Button({
         label: formatPostponeTime(option),
-        style_class: 'button activity-item',
+        style_class: 'button',
         x_align: Clutter.ActorAlign.FILL,
         style: 'margin: 2px; padding: 8px;',
       });
@@ -72,7 +81,7 @@ export const PostponeDialog = GObject.registerClass({
 
     this.setButtons([
       {
-        label: 'Cancel',
+        label: _('Cancel'),
         action: () => this.close(),
         key: Clutter.KEY_Escape,
       }]);

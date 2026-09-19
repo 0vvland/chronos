@@ -75,7 +75,8 @@ export const TimeRow = GObject.registerClass({
       box.append(label);
       box.append(this.mSpin);
 
-      const changeValue = (spin) => () => {
+      // both spins read both adjustments, so one handler serves either signal
+      const changeValue = () => {
         const sec = Math.abs(this._value % 60);
         const hours = this.hSpin.adjustment.value;
         const isNegative = hours < 0 || this.hSpin.text === '-0';
@@ -85,9 +86,8 @@ export const TimeRow = GObject.registerClass({
         return true;
       };
 
-      this.hSpin.connect('output', changeValue(this.hSpin));
-
-      this.mSpin.connect('output', changeValue(this.mSpin));
+      this.hSpin.connect('output', changeValue);
+      this.mSpin.connect('output', changeValue);
 
       this.setSpinnerValues();
     }

@@ -9,14 +9,19 @@ import {
   gettext as _,
 } from 'resource:///org/gnome/shell/extensions/extension.js';
 import {
-  MessageTray,
   Notification,
   getSystemSource,
 } from 'resource:///org/gnome/shell/ui/messageTray.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
-import { PostponeDialog, formatPostponeTime } from './components/PostponeDialog.js';
+import { PostponeDialog } from './components/PostponeDialog.js';
 
 const getUintTime = (ms = Date.now()) => Math.floor(ms / 1000);
+
+// seconds elapsed since local midnight - the scale 'pref-start-alarm-from',
+// 'pref-start-alarm-to' and the timeframe anchor are all stored on
+const getSecondsOfDay = (date) => date.getHours() * 3600 +
+  date.getMinutes() * 60 +
+  date.getSeconds();
 
 // coupled to the one-second tick period: it is what separates "accumulated
 // about a tick's worth" from "somebody else wrote the counter". Lengthening
@@ -31,7 +36,7 @@ const Chronos = GObject.registerClass(
       return this._startTime === null;
     }
 
-    _init (extention) {
+    _init (extension) {
       super._init(0.5, 'Chronos', false);
       // null - if paused, timestamp when started if count
       this._startTime = null;
@@ -54,12 +59,14 @@ const Chronos = GObject.registerClass(
       // null - unless the matching periodic source is currently armed
       this._timeout = null;
       this._pollTimeout = null;
-      this._extention = extention;
-      this._settings = this._extention.getSettings();
-      this.set_style_class_name('panel-button');
+      // [0]=active, [1]=paused; null until readCachedSettings() first runs
+      this._indicatorColors = null;
+      this._extension = extension;
+      this._settings = this._extension.getSettings();
 
       this._settingsChangedId = this._settings.connect('changed',
         this.onChangeSettings.bind(this));
+      this.readCachedSettings();
 
       this._label = new St.Label({
         text: 'Loading...',
@@ -86,14 +93,9 @@ const Chronos = GObject.registerClass(
         'view-refresh-symbolic',
       );
       this.menu.addAction(_('Preferences'),
-        (() => this._extention.openPreferences()),
+        (() => this._extension.openPreferences()),
         'org.gnome.Settings-symbolic',
       );
-
-      this._indicatorColors = [
-        this._settings.get_string('pref-indicator-color'),
-        this._settings.get_string('pref-indicator-paused-color'),
-      ];
 
       this.truncateLog();
       this.logging('init');
@@ -107,10 +109,12 @@ const Chronos = GObject.registerClass(
           this._settings.set_uint('state-pause-start-time', 0);
           this.storeCountedTime();
           this.logging('collect inactive time');
+          // recovery has already set _startTime, so onResume() would return at
+          // its own guard without arming anything: begin the stretch directly
+          this.beginWorkingStretch();
+        } else {
+          this.onResume();
         }
-        this.onResume();
-        // a new working stretch begins on every enable
-        this._breakDeadline = this.getBreakDeadline();
       }
 
       // seeded after the recovered time has been folded in, so the first tick
@@ -124,6 +128,39 @@ const Chronos = GObject.registerClass(
       // for its first value
       this.refreshIndicatorLabel();
       this.updateIndicatorStyle();
+    }
+
+    // The GSettings values worth holding rather than re-reading: the two
+    // indicator colors, and the two keys a one-second pass would otherwise go
+    // back to the backend for on every tick. Refreshed from the 'changed'
+    // signal, never polled. 'state-tracked-time' deliberately stays a live
+    // read - the preferences page and the extension both write it.
+    //
+    // Returns whether the colors moved, which is the only part of the refresh
+    // with a restyle owed to it.
+    readCachedSettings () {
+      const colors = [
+        this._settings.get_string('pref-indicator-color'),
+        this._settings.get_string('pref-indicator-paused-color'),
+      ];
+      const colorsChanged = this._indicatorColors === null ||
+        colors[0] !== this._indicatorColors[0] ||
+        colors[1] !== this._indicatorColors[1];
+      this._indicatorColors = colors;
+      this._showSeconds = this._settings.get_boolean('pref-show-seconds');
+      this._goalAlarmEnabled = this._settings
+        .get_boolean('pref-goal-alarm-enabled');
+      return colorsChanged;
+    }
+
+    // A working stretch begins: the break alarm is armed afresh, and the idle
+    // period is over, so the start alarm is disarmed and may fire again after
+    // the next pause.
+    beginWorkingStretch () {
+      this._breakDeadline = this.getBreakDeadline();
+      this._pauseStartTime = null;
+      this._startDeadline = null;
+      this._startAlarmFired = false;
     }
 
     // The one-second source exists only while needsTick() holds. Arming is
@@ -311,9 +348,7 @@ const Chronos = GObject.registerClass(
       }
       const from = this._settings.get_int('pref-start-alarm-from');
       const to = this._settings.get_int('pref-start-alarm-to');
-      const secondsOfDay = date.getHours() * 3600 +
-        date.getMinutes() * 60 +
-        date.getSeconds();
+      const secondsOfDay = getSecondsOfDay(date);
       return secondsOfDay >= from && secondsOfDay < to;
     }
 
@@ -348,10 +383,8 @@ const Chronos = GObject.registerClass(
       if (this._startDeadline !== null) {
         return this._startDeadline;
       }
-      const secondsOfDay = date.getHours() * 3600 +
-        date.getMinutes() * 60 +
-        date.getSeconds();
-      const timeframeOpenToday = getUintTime(date.getTime()) - secondsOfDay +
+      const timeframeOpenToday = getUintTime(date.getTime()) -
+        getSecondsOfDay(date) +
         this._settings.get_int('pref-start-alarm-from');
       const anchor = Math.max(
         this._pauseStartTime ?? 0,
@@ -383,7 +416,7 @@ const Chronos = GObject.registerClass(
     // a preferences edit, a restart, the suspend-gap recovery - moves it by
     // more than a tick's worth and is re-synchronised silently instead.
     checkGoalAlarm (tracked) {
-      if (!this._settings.get_boolean('pref-goal-alarm-enabled')) {
+      if (!this._goalAlarmEnabled) {
         // kept current while off, so switching on is not read as a jump
         this._lastGoalTracked = tracked;
         return;
@@ -415,7 +448,7 @@ const Chronos = GObject.registerClass(
       const mins = Math.floor(total / 60) % 60;
       const secs = total % 60;
       let timer;
-      if (this._settings.get_boolean('pref-show-seconds')) {
+      if (this._showSeconds) {
         timer = '%d:%02d:%02d'.format(hours, mins, secs);
       } else {
         timer = '%d:%02d'.format(hours, mins);
@@ -476,12 +509,7 @@ const Chronos = GObject.registerClass(
         return;
       }
       this._startTime = getUintTime();
-      this._breakDeadline = this.getBreakDeadline();
-      // starting the tracker ends the idle period, so the start alarm is
-      // disarmed and may fire again after the next pause
-      this._pauseStartTime = null;
-      this._startDeadline = null;
-      this._startAlarmFired = false;
+      this.beginWorkingStretch();
       this.logging('start');
       this.updateIndicatorStyle();
       this._settings.set_boolean('state-paused', false);
@@ -496,12 +524,7 @@ const Chronos = GObject.registerClass(
         const wasPaused = this.isPaused;
         this._startTime = getUintTime();
         if (wasPaused) {
-          // reset started a new working stretch, so it also ended the idle
-          // period - a later pause begins a fresh one
-          this._breakDeadline = this.getBreakDeadline();
-          this._pauseStartTime = null;
-          this._startDeadline = null;
-          this._startAlarmFired = false;
+          this.beginWorkingStretch();
         }
       }
       // the counter jumps here, so the label cannot wait for the next tick to
@@ -511,16 +534,8 @@ const Chronos = GObject.registerClass(
       this._ensureTick();
     }
 
-    onChangeSettings (event) {
-      // console.log('changed', data);
-      if (this._settings.get_string('pref-indicator-color') !==
-        this._indicatorColors[0]
-        || this._settings.get_string('pref-indicator-paused-color') !==
-        this._indicatorColors[1]) {
-        this._indicatorColors = [
-          this._settings.get_string('pref-indicator-color'),
-          this._settings.get_string('pref-indicator-paused-color'),
-        ];
+    onChangeSettings () {
+      if (this.readCachedSettings()) {
         this.updateIndicatorStyle();
       }
       this.refreshIndicatorLabel();
@@ -556,7 +571,7 @@ const Chronos = GObject.registerClass(
         this._settingsChangedId = null;
       }
       this._settings = null;
-      this._extention = null;
+      this._extension = null;
     }
 
     getLogFile () {
@@ -637,14 +652,18 @@ const Chronos = GObject.registerClass(
       source.addNotification(notification);
     }
 
+    // the fixed offers plus the alarm's own configured interval, which may
+    // coincide with one of them - hence the Set
+    postponeOptions (key, ...offers) {
+      return [...new Set([...offers, this._settings.get_int(key)])]
+        .sort((a, b) => a - b);
+    }
+
     showNotification () {
       this.postNotification(_('Time to take a break'), (notification) => {
         notification.addAction(_('Postpone...'), () => {
-          const options = [...new Set([
-            60,
-            300,
-            this._settings.get_int('pref-break-alarm-interval'),
-          ])].sort((a, b) => a - b);
+          const options = this.postponeOptions(
+            'pref-break-alarm-interval', 60, 300);
           const dialog = new PostponeDialog(options, (selected) => {
             this._breakDeadline = getUintTime() + selected;
           });
@@ -661,11 +680,8 @@ const Chronos = GObject.registerClass(
           });
 
           notification.addAction(_('Postpone...'), () => {
-            const options = [...new Set([
-              300,
-              900,
-              this._settings.get_int('pref-start-alarm-delay'),
-            ])].sort((a, b) => a - b);
+            const options = this.postponeOptions(
+              'pref-start-alarm-delay', 300, 900);
             const dialog = new PostponeDialog(options, (selected) => {
               this._startDeadline = getUintTime() + selected;
               this._startAlarmFired = false;
@@ -709,7 +725,6 @@ export default class ChronosExtension extends Extension {
 
     // Add the indicator to the panel
     Main.panel.addToStatusArea(this.uuid, this._indicator, 0);
-    // Main.panel._rightBox.insert_child_at_index(this._indicator, 0);
   }
 
   disable () {

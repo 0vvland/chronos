@@ -25,6 +25,44 @@ const TIME_OF_DAY_BOUNDS = { hoursLower: 0, hoursUpper: 23 };
 // Release notes for the About page, newest release first — array order is
 // display order. A version bump prepends a record; published entries are never
 // rewritten. A thunk, so _() runs when the page is built, not at module load.
+// Three preferences share one shape: their key has no room for an "off"
+// state, so off is a sentinel value - 0, or an empty array. The switch is
+// therefore not bound to the key; it writes either the sentinel or the last
+// value the user chose, and the value row is hidden while off.
+//
+// `read`/`write` speak the key's own type, `isOn` decides what counts as a
+// live value, and `refresh` is for the one site whose switch governs more
+// than a single row.
+const bindSentinelSwitch = ({
+  switchRow, valueRow, read, write, off, isOn, fallback, refresh,
+}) => {
+  const stored = read();
+  let remembered = isOn(stored) ? stored : fallback;
+  const apply = refresh ?? (() => {
+    valueRow.visible = switchRow.active;
+  });
+
+  // both set before anything is connected, so seeding writes nothing back
+  switchRow.active = isOn(stored);
+  valueRow.value = remembered;
+
+  valueRow.connect('notify::value', () => {
+    if (isOn(valueRow.value)) {
+      remembered = valueRow.value;
+    }
+    if (switchRow.active) {
+      write(valueRow.value);
+    }
+  });
+
+  switchRow.connect('notify::active', () => {
+    write(switchRow.active ? remembered : off);
+    apply();
+  });
+
+  apply();
+};
+
 const CHANGELOG = () => [
   {
     version: 16,
@@ -42,7 +80,7 @@ const CHANGELOG = () => [
 // Page Adjust time
 const AdjustTimePage = GObject.registerClass(
   class ChronosAdjustTimePrefPage extends Adw.PreferencesPage {
-    _init (settings, settingsKey) {
+    _init (settings) {
       super._init({
         title: _('Time'),
         icon_name: 'org.gnome.Settings-time-symbolic',
@@ -82,7 +120,7 @@ const AdjustTimePage = GObject.registerClass(
 // Page Appearance
 const AppearancePage = GObject.registerClass(
   class ChronosAppearancePrefPage extends Adw.PreferencesPage {
-    _init (settings, settingsKey) {
+    _init (settings) {
       super._init({
         title: _('Appearance'),
         icon_name: 'preferences-desktop-appearance-symbolic',
@@ -132,7 +170,7 @@ const AppearancePage = GObject.registerClass(
 // Page Behavior
 const BehaviorPage = GObject.registerClass(
   class ChronosBehaviorPrefPage extends Adw.PreferencesPage {
-    _init (settings, settingsKey) {
+    _init (settings) {
       super._init({
         title: _('Behavior'),
         icon_name: 'org.gnome.Settings-symbolic',
@@ -165,17 +203,10 @@ const BehaviorPage = GObject.registerClass(
 
       groupLogging.add(switchLogging);
 
-      // 'pref-log-max-lines' of 0 means never truncate, so the switch is not
-      // bound to a key: it writes 0 or the last limit the user chose
-      const storedMaxLines = this.settings.get_int('pref-log-max-lines');
-      this._logMaxLines = storedMaxLines > 0
-        ? storedMaxLines
-        : DEFAULT_LOG_MAX_LINES;
-
+      // 'pref-log-max-lines' of 0 means never truncate
       const switchLogTruncate = new Adw.SwitchRow({
         title: _('Limit log file size'),
         subtitle: _('Keep only the newest lines, trimmed when the extension starts'),
-        active: storedMaxLines > 0,
       });
 
       groupLogging.add(switchLogTruncate);
@@ -188,27 +219,20 @@ const BehaviorPage = GObject.registerClass(
           upper: 1000000,
           step_increment: 10,
           page_increment: 100,
-          value: this._logMaxLines,
         }),
       });
 
-      maxLinesRow.connect('notify::value', () => {
-        if (maxLinesRow.value > 0) {
-          this._logMaxLines = maxLinesRow.value;
-        }
-        if (switchLogTruncate.active) {
-          this.settings.set_int('pref-log-max-lines', maxLinesRow.value);
-        }
-      });
-
-      maxLinesRow.visible = switchLogTruncate.active;
-      switchLogTruncate.connect('notify::active', () => {
-        maxLinesRow.visible = switchLogTruncate.active;
-        this.settings.set_int('pref-log-max-lines',
-          switchLogTruncate.active ? this._logMaxLines : 0);
-      });
-
       groupLogging.add(maxLinesRow);
+
+      bindSentinelSwitch({
+        switchRow: switchLogTruncate,
+        valueRow: maxLinesRow,
+        read: () => this.settings.get_int('pref-log-max-lines'),
+        write: (value) => this.settings.set_int('pref-log-max-lines', value),
+        off: 0,
+        isOn: (value) => value > 0,
+        fallback: DEFAULT_LOG_MAX_LINES,
+      });
 
       this.add(groupLogging);
 
@@ -241,17 +265,10 @@ const AlarmsPage = GObject.registerClass(
         title: _('Take a break alarm'),
       });
 
-      // 'pref-break-alarm-interval' of 0 means the alarm is off, so the switch
-      // is not bound to a key: it writes 0 or the last interval the user chose
-      const storedInterval = this.settings.get_int('pref-break-alarm-interval');
-      this._breakInterval = storedInterval > 0
-        ? storedInterval
-        : DEFAULT_BREAK_INTERVAL;
-
+      // 'pref-break-alarm-interval' of 0 means the alarm is off
       const switchBreakAlarm = new Adw.SwitchRow({
         title: _('Enable break alarm'),
         subtitle: _('Notify to take a break after a period of tracking'),
-        active: storedInterval > 0,
       });
 
       groupBreakAlarm.add(switchBreakAlarm);
@@ -259,26 +276,20 @@ const AlarmsPage = GObject.registerClass(
       const intervalRow = new TimeRow({
         title: _('Interval'),
         subtitle: _('Time of non-pause tracking before alarm triggers'),
-        value: this._breakInterval,
-      });
-
-      intervalRow.connect('notify::value', () => {
-        if (intervalRow.value > 0) {
-          this._breakInterval = intervalRow.value;
-        }
-        if (switchBreakAlarm.active) {
-          this.settings.set_int('pref-break-alarm-interval', intervalRow.value);
-        }
-      });
-
-      intervalRow.visible = switchBreakAlarm.active;
-      switchBreakAlarm.connect('notify::active', () => {
-        intervalRow.visible = switchBreakAlarm.active;
-        this.settings.set_int('pref-break-alarm-interval',
-          switchBreakAlarm.active ? this._breakInterval : 0);
       });
 
       groupBreakAlarm.add(intervalRow);
+
+      bindSentinelSwitch({
+        switchRow: switchBreakAlarm,
+        valueRow: intervalRow,
+        read: () => this.settings.get_int('pref-break-alarm-interval'),
+        write: (value) =>
+          this.settings.set_int('pref-break-alarm-interval', value),
+        off: 0,
+        isOn: (value) => value > 0,
+        fallback: DEFAULT_BREAK_INTERVAL,
+      });
 
       this.add(groupBreakAlarm);
 
@@ -286,19 +297,11 @@ const AlarmsPage = GObject.registerClass(
         title: _('Start tracking reminder'),
       });
 
-      // an empty 'pref-start-alarm-days' means the alarm is off, so the switch
-      // is not bound to a key: it writes an empty array or the last selection
-      const storedDays = this.settings.get_value('pref-start-alarm-days')
-        .deep_unpack();
-      this._startDays = storedDays.length > 0
-        ? storedDays
-        : DEFAULT_START_DAYS;
-
+      // an empty 'pref-start-alarm-days' means the alarm is off
       const switchStartAlarm = new Adw.SwitchRow({
         title: _('Enable start tracking reminder'),
         subtitle: _(
           'Notify when the tracker stays paused during working hours'),
-        active: storedDays.length > 0,
       });
 
       groupStartAlarm.add(switchStartAlarm);
@@ -306,18 +309,6 @@ const AlarmsPage = GObject.registerClass(
       const daysRow = new WeekdayRow({
         title: _('Days'),
         subtitle: _('Weekdays the reminder is active on'),
-        value: this._startDays,
-      });
-
-      // Gio.Settings.bind does not handle array properties, so wire it by hand
-      daysRow.connect('notify::value', () => {
-        if (daysRow.value.length > 0) {
-          this._startDays = daysRow.value;
-        }
-        if (switchStartAlarm.active) {
-          this.settings.set_value('pref-start-alarm-days',
-            new GLib.Variant('ai', daysRow.value));
-        }
       });
 
       groupStartAlarm.add(daysRow);
@@ -378,14 +369,20 @@ const AlarmsPage = GObject.registerClass(
       fromRow.connect('notify::value', refreshStartAlarmRows);
       toRow.connect('notify::value', refreshStartAlarmRows);
 
-      switchStartAlarm.connect('notify::active', () => {
-        this.settings.set_value('pref-start-alarm-days',
-          new GLib.Variant('ai',
-            switchStartAlarm.active ? this._startDays : []));
-        refreshStartAlarmRows();
+      // Gio.Settings.bind does not handle array properties, so the days are
+      // wired by hand - which the sentinel switch was going to do regardless
+      bindSentinelSwitch({
+        switchRow: switchStartAlarm,
+        valueRow: daysRow,
+        read: () => this.settings.get_value('pref-start-alarm-days')
+          .deep_unpack(),
+        write: (days) => this.settings.set_value('pref-start-alarm-days',
+          new GLib.Variant('ai', days)),
+        off: [],
+        isOn: (days) => days.length > 0,
+        fallback: DEFAULT_START_DAYS,
+        refresh: refreshStartAlarmRows,
       });
-
-      refreshStartAlarmRows();
 
       this.add(groupStartAlarm);
 
@@ -429,13 +426,12 @@ const AlarmsPage = GObject.registerClass(
 // Page About
 const AboutPage = GObject.registerClass(
   class ChronosAboutPrefPage extends Adw.PreferencesPage {
-    _init (settings, extensionDir) {
+    _init (extensionDir) {
       super._init({
         title: _('About'),
         icon_name: 'help-about-symbolic',
         name: 'ChronosAboutPrefPage',
       });
-      this.settings = settings;
 
       const groupLogo = new Adw.PreferencesGroup();
 
@@ -534,7 +530,7 @@ export default class ChronosPreferences extends ExtensionPreferences {
     const pageAppearance = new AppearancePage(settings);
     const pageBehavior = new BehaviorPage(settings);
     const pageAlarms = new AlarmsPage(settings);
-    const pageAbout = new AboutPage(settings, this.dir);
+    const pageAbout = new AboutPage(this.dir);
 
     window.add(pageAdjustTime);
     window.add(pageAppearance);
