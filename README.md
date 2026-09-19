@@ -115,3 +115,7 @@ copy `source/chronos.pot`, translate it, and run `make build` to compile.
 
 ## Plans (ToDo)
 - more flexible timer ticks: 1 min and 1 sec timer (depend on view settings) - spare resources
+- Auto-pause on idle Pause-on-lock exists; "walked away without locking" does not. global.backend.get_core_idle_monitor() gives a watch that fires after N ms idle and on becoming active again — pause on idle, and optionally retroactively subtract the idle span (you already backdate _startTime for the suspend gap, so the machinery is there). Same class of feature as pref-pause-on-destroy, one new key + one watch to release in onDestroy().
+- middle-click toggle The pitch is "one click to start or pause"; one middle-click on the indicator skips the menu entirely
+- Alarm urgency / persistence The three notifications use default urgency, so a break alarm is easy to miss in fullscreen or Do Not Disturb. A per-alarm "urgent" option (Notification.urgency = CRITICAL, which stays on screen until acted on) makes the alarms actually do their job. Small, but it's the difference between a reminder and a suggestion
+- Projects / multiple timers. It breaks "one counter" and drags in a data model, a picker UI, and per-project history
