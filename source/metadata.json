@@ -1,6 +1,6 @@
 {
   "name": "Chronos Time Tracker",
-  "description": "Time tracker tool\nMange and track your time. Features:\n- tracking time\n- display customisation\n- log to file start/pause, with an optional line limit\n- optional pause of tracking on screen lock (hibernate/shutdown)\n- reset to particular time value",
+  "description": "Track your working time from the top panel: one click to start or pause, a running counter, and alarms that keep the day on track.\n\nFeatures:\n- Tracking — start/pause from the panel menu, cumulative counter shown as H:MM or H:MM:SS, restart to a preset value at any time\n- Break alarm — a notification after a chosen span of uninterrupted tracking, with a Postpone dialog\n- Start tracking reminder — a notification when the tracker stays paused inside your working hours, with Start, Postpone and Not today actions\n- Tracked time goal — a notification when the counter reaches your target, postponed by further tracked time rather than by the clock\n- Appearance — separate colors for the running and paused states, optional seconds in the indicator\n- Lock/suspend handling — optionally pause while the screen is locked; when disabled, time spent locked or suspended is recovered on resume\n- Logging — append every state change to ~/timeTrack.log, optionally capped to a number of lines\n- The counter may go negative, so you can count time owed down against a daily target\n- Localisation — English and Russian",
   "settings-schema": "org.gnome.shell.extensions.chronos",
   "uuid": "chronos@time-tracker.com",
   "shell-version": [
