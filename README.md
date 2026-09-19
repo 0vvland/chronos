@@ -115,4 +115,3 @@ copy `source/chronos.pot`, translate it, and run `make build` to compile.
 
 ## Plans (ToDo)
 - more flexible timer ticks: 1 min and 1 sec timer (depend on view settings) - spare resources
-- code optimization

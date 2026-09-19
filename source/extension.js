@@ -69,8 +69,11 @@ const Chronos = GObject.registerClass(
         y_align: Clutter.ActorAlign.CENTER,
 
       });
+      // the string currently on the label, so an unchanged pass costs nothing
+      this._lastLabelText = null;
       this._label.connect('destroy', () => {
         this._label = null;
+        this._lastLabelText = null;
       });
       this.add_child(this._label);
 
@@ -127,30 +130,42 @@ const Chronos = GObject.registerClass(
     // idempotent and happens from many sites; removal belongs to the callback
     // alone, because removing a GSource from inside its own callback with
     // GLib.Source.remove() is how GJS double-frees.
-    _ensureTick () {
-      if (this._timeout === null && this.needsTick()) {
-        this._timeout = GLib.timeout_add(1000, GLib.PRIORITY_LOW,
+    //
+    // GLib's timeout functions take (priority, interval) in that order in
+    // GJS. Passing them the other way round is silent - PRIORITY_LOW is 300,
+    // so it reads as a plausible interval - and is what made this source fire
+    // every 300ms and the poll below every 300 seconds.
+    //
+    // The instant defaults here and on _ensurePoll(), unlike on the date
+    // methods below: every other caller is a user action or an enable, each
+    // of which genuinely is a moment of its own rather than part of a pass.
+    // Only the tick's own tail hands its record down.
+    _ensureTick (instant = this.takeInstant()) {
+      if (this._timeout === null && this.needsTick(instant)) {
+        this._timeout = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 1,
           this.onTick.bind(this));
       }
-      this._ensurePoll();
+      this._ensurePoll(instant);
     }
 
     // The 60-second re-arming poll: all that runs while paused with a start
     // alarm set for today that merely cannot fire yet. Never armed alongside
     // the one-second tick - the tick's own tail arms it on standing down.
-    _ensurePoll () {
+    _ensurePoll (instant = this.takeInstant()) {
       if (this._pollTimeout !== null || this._timeout !== null ||
-        !this.needsPoll()) {
+        !this.needsPoll(instant)) {
         return;
       }
-      this._pollTimeout = GLib.timeout_add_seconds(60, GLib.PRIORITY_LOW,
+      this._pollTimeout = GLib.timeout_add_seconds(GLib.PRIORITY_LOW, 60,
         () => {
-          // needsPoll() re-derives the weekday and the time of day from a
-          // fresh Date on every pass and holds no precomputed deadline, so a
-          // suspend, a timezone change or a DST transition cannot shift or
-          // lose the opening
-          this._ensureTick();
-          if (this._timeout !== null || !this.needsPoll()) {
+          // a pass of its own, so it takes its own instant: needsPoll()
+          // re-derives the weekday and the time of day from a fresh Date on
+          // every pass and holds no precomputed deadline, so a suspend, a
+          // timezone change or a DST transition cannot shift or lose the
+          // opening
+          const pollInstant = this.takeInstant();
+          this._ensureTick(pollInstant);
+          if (this._timeout !== null || !this.needsPoll(pollInstant)) {
             this._pollTimeout = null;
             return GLib.SOURCE_REMOVE;
           }
@@ -158,23 +173,48 @@ const Chronos = GObject.registerClass(
         });
     }
 
+    // One pass, one instant. Everything time-derived a pass needs comes from
+    // here, so the indicator, the goal alarm and the two deadlines cannot each
+    // be looking at a different "now". The record is a local value that dies
+    // with the pass; nothing derived from it may be stored on `this`.
+    takeInstant () {
+      const date = new Date();
+      const uintTime = getUintTime(date.getTime());
+      let configuredToday;
+      return {
+        date,
+        uintTime,
+        trackedSeconds: this.getTrackedSeconds(uintTime),
+        // A thunk rather than a value, and memoised: the four day-level
+        // GSettings reads behind it are never paid while the tracker is
+        // counting, because every caller settles on isPaused first. Forcing
+        // it here would undo exactly that saving.
+        configuredToday: () => {
+          configuredToday ??= this.isStartAlarmConfiguredToday(date);
+          return configuredToday;
+        },
+      };
+    }
+
     onTick () {
+      const instant = this.takeInstant();
+
       // every 2 collected minutes store them - only while counting, since the
       // tick also runs through a paused start-alarm window and _startTime is
       // null there
-      if (!this.isPaused && getUintTime() - this._startTime > 60 * 2) {
-        this.storeCountedTime();
+      if (!this.isPaused && instant.uintTime - this._startTime > 60 * 2) {
+        this.storeCountedTime(instant.uintTime);
       }
-      this.refreshIndicatorLabel();
+      this.refreshIndicatorLabel(instant.trackedSeconds);
 
-      if (this._breakDeadline !== null && getUintTime() >= this._breakDeadline) {
+      if (this._breakDeadline !== null &&
+        instant.uintTime >= this._breakDeadline) {
         this._breakDeadline = null;
         this.showNotification();
       }
 
-      const now = new Date();
-      if (this.isStartAlarmEligible(now) &&
-        getUintTime(now.getTime()) >= this.getStartDeadline(now)) {
+      if (this.isStartAlarmEligible(instant.date, instant.configuredToday) &&
+        instant.uintTime >= this.getStartDeadline(instant.date)) {
         this._startAlarmFired = true;
         this._startDeadline = null;
         this.showStartNotification();
@@ -184,11 +224,14 @@ const Chronos = GObject.registerClass(
       // frozen so the step is zero, and the call keeps _lastGoalTracked
       // current - otherwise a preferences edit made during the pause would
       // read as accumulation on the first tick after resume
-      this.checkGoalAlarm();
+      this.checkGoalAlarm(instant.trackedSeconds);
 
-      if (!this.needsTick()) {
+      // asked again, not reused: _startAlarmFired may have flipped just above,
+      // and that flip is what stands the tick down. Only the instant is
+      // shared with the question at the top of the pass, never the answer.
+      if (!this.needsTick(instant)) {
         this._timeout = null;
-        this._ensurePoll();
+        this._ensurePoll(instant);
         return GLib.SOURCE_REMOVE;
       }
       return GLib.SOURCE_CONTINUE;
@@ -215,7 +258,7 @@ const Chronos = GObject.registerClass(
 
     // local calendar day as YYYYMMDD, the encoding of
     // 'state-start-alarm-dismissed'
-    getLocalDay (date = new Date()) {
+    getLocalDay (date) {
       return date.getFullYear() * 10000 +
         (date.getMonth() + 1) * 100 +
         date.getDate();
@@ -226,7 +269,12 @@ const Chronos = GObject.registerClass(
     // been dismissed. Nothing here depends on the time of day or on whether
     // the alarm has already fired, which is what lets the 60-second poll ask
     // "is there anything to wait for today?" without duplicating the test.
-    isStartAlarmConfiguredToday (date = new Date()) {
+    //
+    // Nothing the tick body writes can change this answer - the "Not today"
+    // dismissal is a notification action, which runs outside the pass - so it
+    // MAY be evaluated once per pass and carried on the pass's record. Its
+    // counterpart isStartAlarmEligible() may not; see the note there.
+    isStartAlarmConfiguredToday (date) {
       const days = this._settings.get_value('pref-start-alarm-days')
         .deep_unpack();
       if (days.length === 0 || !days.includes(date.getDay())) {
@@ -241,12 +289,24 @@ const Chronos = GObject.registerClass(
     }
 
     // Everything is derived from local time on each call, so the timeframe
-    // follows the wall clock across midnight, DST and suspend/resume
-    isStartAlarmEligible (date = new Date()) {
-      if (!this.isStartAlarmConfiguredToday(date)) {
+    // follows the wall clock across midnight, DST and suspend/resume.
+    //
+    // This folds in _startAlarmFired and isPaused, both of which the tick body
+    // itself can change: raising the alarm sets the flag mid-pass, and the
+    // second answer is REQUIRED to differ - that flip is what stands the tick
+    // down. So this MUST NOT be hoisted or cached within a pass, only asked
+    // again from the pass's own instant. Hoisting it leaves the tick armed
+    // forever after the alarm fires, silently and with nothing else to show
+    // for it.
+    //
+    // The cheap terms come first: while the tracker is counting, a field
+    // access settles it and the four day-level GSettings reads in
+    // isStartAlarmConfiguredToday() are never paid.
+    isStartAlarmEligible (date, configuredToday) {
+      if (!this.isPaused || this._startAlarmFired) {
         return false;
       }
-      if (!this.isPaused || this._startAlarmFired) {
+      if (!configuredToday()) {
         return false;
       }
       const from = this._settings.get_int('pref-start-alarm-from');
@@ -271,19 +331,20 @@ const Chronos = GObject.registerClass(
     // A consumer added to the tick body that needs a wake-up outside those
     // terms has to add its own here, or it will work while tracking and
     // quietly fail while paused.
-    needsTick () {
-      return !this.isPaused || this.isStartAlarmEligible();
+    needsTick (instant) {
+      return !this.isPaused ||
+        this.isStartAlarmEligible(instant.date, instant.configuredToday);
     }
 
     // A start alarm is set for today but cannot fire yet - the one case where
     // standing the tick down still leaves something to wait for
-    needsPoll () {
-      return !this.needsTick() && this.isStartAlarmConfiguredToday();
+    needsPoll (instant) {
+      return !this.needsTick(instant) && instant.configuredToday();
     }
 
     // deadline = max(pauseStart, enabledAt, timeframeOpenToday) + delay,
     // unless a postponement pinned an explicit one
-    getStartDeadline (date = new Date()) {
+    getStartDeadline (date) {
       if (this._startDeadline !== null) {
         return this._startDeadline;
       }
@@ -310,19 +371,18 @@ const Chronos = GObject.registerClass(
     }
 
     // stored tracked time plus whatever has not been flushed to it yet
-    getTrackedSeconds () {
+    getTrackedSeconds (uintTime = getUintTime()) {
       const trackedTime = this._settings.get_int('state-tracked-time');
       if (this.isPaused) {
         return trackedTime;
       }
-      return trackedTime + (getUintTime() - this._startTime);
+      return trackedTime + (uintTime - this._startTime);
     }
 
     // Only accumulation raises the alarm. Every other writer of the counter -
     // a preferences edit, a restart, the suspend-gap recovery - moves it by
     // more than a tick's worth and is re-synchronised silently instead.
-    checkGoalAlarm () {
-      const tracked = this.getTrackedSeconds();
+    checkGoalAlarm (tracked) {
       if (!this._settings.get_boolean('pref-goal-alarm-enabled')) {
         // kept current while off, so switching on is not read as a jump
         this._lastGoalTracked = tracked;
@@ -348,39 +408,41 @@ const Chronos = GObject.registerClass(
       this._lastGoalTracked = tracked;
     }
 
-    getTrackedTime () {
-      let trackedTime = this.getTrackedSeconds();
-      const isNegative = trackedTime < 0;
-      trackedTime = Math.abs(trackedTime);
-      const hours = Math.floor(trackedTime / 3600);
-      if (hours !== 0) {
-        trackedTime -= hours * 3600;
-      }
-      const mins = Math.floor(trackedTime / 60);
-      if (mins !== 0) {
-        trackedTime -= mins * 60;
-      }
+    getTrackedTime (trackedSeconds = this.getTrackedSeconds()) {
+      const isNegative = trackedSeconds < 0;
+      const total = Math.abs(trackedSeconds);
+      const hours = Math.floor(total / 3600);
+      const mins = Math.floor(total / 60) % 60;
+      const secs = total % 60;
       let timer;
-      if (this._settings.get_boolean('pref-show-seconds') === true) {
-        timer = '%d:%02d:%02d'.format(hours, mins, trackedTime);
+      if (this._settings.get_boolean('pref-show-seconds')) {
+        timer = '%d:%02d:%02d'.format(hours, mins, secs);
       } else {
         timer = '%d:%02d'.format(hours, mins);
       }
       return isNegative ? '-' + timer : timer;
     }
 
-    refreshIndicatorLabel () {
-      if (this._label && this._label.get_parent) {
-        this._label.set_text(this.getTrackedTime());
+    // Gated on the rendered string rather than on the second: correct whatever
+    // 'pref-show-seconds' is set to, and it survives a tracked-time edit
+    // landing mid-minute. With seconds hidden this is 59 passes in 60.
+    refreshIndicatorLabel (trackedSeconds = this.getTrackedSeconds()) {
+      if (!this._label) {
+        return;
       }
+      const text = this.getTrackedTime(trackedSeconds);
+      if (text === this._lastLabelText) {
+        return;
+      }
+      this._lastLabelText = text;
+      this._label.set_text(text);
     }
 
-    storeCountedTime () {
+    storeCountedTime (now = getUintTime()) {
       if (this.isPaused) {
         return;
       }
       const countedTime = this._settings.get_int('state-tracked-time');
-      const now = getUintTime();
       const extraCountedTime = now - this._startTime;
       this._startTime = now;
       this._settings.set_int('state-tracked-time',
@@ -442,6 +504,9 @@ const Chronos = GObject.registerClass(
           this._startAlarmFired = false;
         }
       }
+      // the counter jumps here, so the label cannot wait for the next tick to
+      // show it - and it would show the value a second late by then anyway
+      this.refreshIndicatorLabel();
       this.updateIndicatorStyle();
       this._ensureTick();
     }
@@ -546,21 +611,10 @@ const Chronos = GObject.registerClass(
         this._logOutputStream = this.getLogFile()
           .append_to(Gio.FileCreateFlags.NONE, null);
       }
-      const date = new Date();
-      const tzo = -date.getTimezoneOffset();
-      const dif = tzo >= 0 ? '+' : '-';
-      const pad = function (num) {
-        return (num < 10 ? '0' : '') + num;
-      };
-
-      const isoDate = date.getFullYear() +
-        '-' + pad(date.getMonth() + 1) +
-        '-' + pad(date.getDate()) +
-        'T' + pad(date.getHours()) +
-        ':' + pad(date.getMinutes()) +
-        ':' + pad(date.getSeconds()) +
-        dif + pad(Math.floor(Math.abs(tzo) / 60)) +
-        ':' + pad(Math.abs(tzo) % 60);
+      // the explicit format string, never format_iso8601(): that one appends
+      // microseconds and renders the offset as '+03' rather than '+03:00'
+      const isoDate = GLib.DateTime.new_now_local()
+        .format('%Y-%m-%dT%H:%M:%S%:z');
 
       const bytes = new GLib.Bytes(
         `${isoDate}: [${event}] ${this.getTrackedTime()}\n`,
@@ -568,90 +622,84 @@ const Chronos = GObject.registerClass(
       this._logOutputStream.write_bytes(bytes, null);
     }
 
-    showNotification () {
+    // Rendering only: the three alarms share a title and an icon and nothing
+    // else. Each caller keeps its own body, its own actions and its own
+    // postpone scale - the state machines genuinely differ.
+    postNotification (body, addActions) {
       const source = getSystemSource();
       const notification = new Notification({
         source: source,
         title: _('Chronos Tracker'),
         iconName: 'appointment-new-symbolic',
-        // gicon: null,
-        body: _('Time to take a break'),
+        body: body,
       });
-
-      notification.addAction(_('Postpone...'), () => {
-        const options = [
-          60,
-          300,
-          this._settings.get_int('pref-break-alarm-interval'),
-        ].filter((s, i, a) => a.indexOf(s) === i).sort((a, b) => a - b);
-        const dialog = new PostponeDialog(options, (selected) => {
-          this._breakDeadline = getUintTime() + selected;
-        });
-        dialog.open();
-      });
+      addActions(notification);
       source.addNotification(notification);
+    }
+
+    showNotification () {
+      this.postNotification(_('Time to take a break'), (notification) => {
+        notification.addAction(_('Postpone...'), () => {
+          const options = [...new Set([
+            60,
+            300,
+            this._settings.get_int('pref-break-alarm-interval'),
+          ])].sort((a, b) => a - b);
+          const dialog = new PostponeDialog(options, (selected) => {
+            this._breakDeadline = getUintTime() + selected;
+          });
+          dialog.open();
+        });
+      });
     }
 
     showStartNotification () {
-      const source = getSystemSource();
-      const notification = new Notification({
-        source: source,
-        title: _('Chronos Tracker'),
-        iconName: 'appointment-new-symbolic',
-        body: _('Time tracking is paused, time to start'),
-      });
+      this.postNotification(_('Time tracking is paused, time to start'),
+        (notification) => {
+          notification.addAction(_('Start'), () => {
+            this.onResume();
+          });
 
-      notification.addAction(_('Start'), () => {
-        this.onResume();
-      });
+          notification.addAction(_('Postpone...'), () => {
+            const options = [...new Set([
+              300,
+              900,
+              this._settings.get_int('pref-start-alarm-delay'),
+            ])].sort((a, b) => a - b);
+            const dialog = new PostponeDialog(options, (selected) => {
+              this._startDeadline = getUintTime() + selected;
+              this._startAlarmFired = false;
+              // the tick stood down when the alarm fired, and clearing the
+              // flag above is the only thing that makes it eligible again
+              this._ensureTick();
+            });
+            dialog.open();
+          });
 
-      notification.addAction(_('Postpone...'), () => {
-        const options = [
-          300,
-          900,
-          this._settings.get_int('pref-start-alarm-delay'),
-        ].filter((s, i, a) => a.indexOf(s) === i).sort((a, b) => a - b);
-        const dialog = new PostponeDialog(options, (selected) => {
-          this._startDeadline = getUintTime() + selected;
-          this._startAlarmFired = false;
-          // the tick stood down when the alarm fired, and clearing the flag
-          // above is the only thing that makes it eligible again
-          this._ensureTick();
+          notification.addAction(_('Not today'), () => {
+            // outside any pass, so this action is its own instant
+            this._settings.set_int('state-start-alarm-dismissed',
+              this.getLocalDay(new Date()));
+          });
         });
-        dialog.open();
-      });
-
-      notification.addAction(_('Not today'), () => {
-        this._settings.set_int('state-start-alarm-dismissed',
-          this.getLocalDay());
-      });
-
-      source.addNotification(notification);
     }
 
     showGoalNotification () {
-      const source = getSystemSource();
-      const notification = new Notification({
-        source: source,
-        title: _('Chronos Tracker'),
-        iconName: 'appointment-new-symbolic',
-        body: _('The tracked time target is reached'),
-      });
+      this.postNotification(_('The tracked time target is reached'),
+        (notification) => {
+          notification.addAction(_('Postpone...'), () => {
+            // measured in tracked time, so a pause does not consume it
+            const dialog = new PostponeDialog([300, 900, 1800], (selected) => {
+              this._goalDeadline = this.getTrackedSeconds() + selected;
+              this._goalFired = false;
+            }, _('Select Tracked Time'));
+            dialog.open();
+          });
 
-      notification.addAction(_('Postpone...'), () => {
-        // measured in tracked time, so a pause does not consume it
-        const dialog = new PostponeDialog([300, 900, 1800], (selected) => {
-          this._goalDeadline = this.getTrackedSeconds() + selected;
-          this._goalFired = false;
-        }, _('Select Tracked Time'));
-        dialog.open();
-      });
-
-      notification.addAction(_('Dismiss'), () => {
-        notification.destroy();
-      });
-
-      source.addNotification(notification);
+          notification.addAction(_('Dismiss'), () => {
+            notification.destroy();
+          });
+        });
     }
   });
 
