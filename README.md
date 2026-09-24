@@ -9,7 +9,7 @@ one click to start or pause, a running counter in the panel, and alarms that
 remind you to take a break, to start tracking when you forgot to, or to stop
 once you have hit your daily target.
 
-Supports GNOME Shell 45–50.
+Supports GNOME Shell 46–50.
 
 ![indicator](https://github.com/0vvland/chronos/blob/master/screenshot.png)
 ![preferences](https://github.com/0vvland/chronos/blob/master/preferences.png)

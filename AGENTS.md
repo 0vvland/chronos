@@ -1,6 +1,6 @@
 # AGENTS.md — Chronos Time Tracker
 
-GNOME Shell extension (uuid: `chronos@time-tracker.com`), GJS, targets Shell 45–50.
+GNOME Shell extension (uuid: `chronos@time-tracker.com`), GJS, targets Shell 46–50.
 
 ## Architecture
 
@@ -91,6 +91,37 @@ line, so they survive edits above the finding and a new violation of the same
 rule elsewhere still fails the build. None are waived today. **A waiver needs
 a reason in the table**, and a finding that is actually a defect gets fixed
 rather than listed.
+
+## Shell Version Compatibility
+
+`shell-version` in `metadata.json` is a promise to every listed release. **Any
+change that touches a Shell, GJS, GTK or libadwaita API has to be checked
+against every version listed there** — the oldest and the newest at the very
+least — and the list (and the "targets Shell …" line at the top of this file)
+narrowed rather than left claiming a version the code no longer runs on.
+
+- **Only the newest Shell is installed here**, so the nested-Shell recipe below
+  proves the newest release and nothing older. Older ones are checked against
+  upstream source at the release tag, e.g.
+  `curl -sL https://gitlab.gnome.org/GNOME/gnome-shell/-/raw/46.0/js/ui/messageTray.js`
+  (`src/st/*.c` for St properties). Prefs run against the distro's GTK and
+  libadwaita, so their floor is what the oldest listed GNOME shipped
+  (GNOME 46: GTK 4.14, libadwaita 1.5).
+- **A missing named export fails the whole extension, not one feature.**
+  `import { x } from 'resource:///…'` is resolved at module link time, so an
+  export an older Shell lacks makes `extension.js` fail to load at all.
+- **`messageTray.js` was rewritten in Shell 46.** `getSystemSource()`,
+  `new Notification({source, title, body, iconName})` and
+  `source.addNotification()` exist only from 46 on; Shell 45 has
+  `new Notification(source, title, banner)` and `source.showNotification()`.
+  This is why 45 was dropped from `shell-version` — re-adding it needs a
+  runtime shim for both shapes.
+- **Deprecated is not removed, but check it.** `St.BoxLayout`'s `vertical` is
+  deprecated in favour of `orientation` yet still present through 50; a
+  removal in a future release would break `PostponeDialog`.
+- **Adding a new Shell major** means reading that release's porting guide
+  (gjs.guide, "Port Extensions to GNOME Shell N") before the version goes into
+  the list.
 
 ## Screenshots
 
