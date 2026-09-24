@@ -88,10 +88,9 @@ shexli always exits 0 — it reports, it does not judge. The verdict comes from
 **`tools/shexli-gate.py`**, which fails on every finding except the waivers
 listed in its `WAIVED` table. Waivers are keyed by rule *and file*, never by
 line, so they survive edits above the finding and a new violation of the same
-rule elsewhere still fails the build. Two are waived today, both `enable()`
-teardown rules (`EGO-L-003`, `EGO-L-004`) that miss Chronos' teardown split —
-see Gotcha 7. **A waiver needs a reason in the table**, and a finding that is
-actually a defect gets fixed rather than listed.
+rule elsewhere still fails the build. None are waived today. **A waiver needs
+a reason in the table**, and a finding that is actually a defect gets fixed
+rather than listed.
 
 ## Screenshots
 
@@ -183,7 +182,7 @@ rewrite and the teardown findings were settled.
 4. **Negative time:** `state-tracked-time` can go negative (the `-` prefix appears in the label). `TimeRow` hours spin goes down to -999 to support this.
 5. **`Chronos` is paused when `_startTime === null`** (getter `isPaused`). Not a boolean flag — pauses set `_startTime = null`, resumes set it to `getUintTime()`.
 6. **`onReset` behavior:** sets tracked time to `pref-reset-time` value, then if not paused (or `pref-start-on-reset` is true) also resets `_startTime` — meaning it starts counting from *now* on top of the reset value. If paused and `pref-start-on-reset=false`, it just sets the value without starting.
-7. **Teardown split:** `onDestroy()` releases everything the indicator owns (timeout source, `changed` signal, log stream) and `disable()` then calls `destroy()` on the actor. Anything created in `_init` needs a matching release in `onDestroy` — the EGO linter (EGO-L-002/003/004) checks for it.
+7. **Teardown lives in the `destroy()` override:** it releases everything the indicator owns (timeout sources, `changed` signal, log stream), then chains to `super.destroy()`; `disable()` only calls `destroy()`. Anything created in `_init` needs a matching release there — the EGO linter (EGO-L-002/003/004) checks for it, and only follows releases reachable from a cleanup-named method (`destroy`, `disable`, `dispose`, …), so don't move it back into a helper named otherwise.
 8. **One pass, one instant.** `onTick()` opens with `takeInstant()` and threads that record (`date`, `uintTime`, `trackedSeconds`, `configuredToday`) through everything it calls, so a pass reads the clock exactly once. The date methods — `getLocalDay`, `isStartAlarmConfiguredToday`, `isStartAlarmEligible`, `getStartDeadline` — deliberately have **no `date = new Date()` default**: that default is what previously let `needsTick()` construct a second, later instant thirteen lines after the first. A caller outside a pass (a notification action, the poll) builds its own instant. The record is a local value that dies with the pass — never store it or anything derived from it on `this`.
    - **`isStartAlarmEligible()` is exempt from the hoisting half of that rule.** It folds in `_startAlarmFired`, which the pass itself flips when the alarm fires, and the second answer is *required* to differ — that flip is what stands the tick down. It must be asked again at the tail of the pass, from the pass's instant. Hoisting it is silent: everything keeps working and the machine simply never sleeps. Its day-level half, `isStartAlarmConfiguredToday()`, folds in nothing the pass can change and *is* memoised on the record — as a thunk, so a counting tracker never pays its four GSettings reads.
 9. **`GLib.timeout_add*` takes `(priority, interval)`, in that order.** Reversing them is silent, because `GLib.PRIORITY_LOW` is `300` and reads as a plausible millisecond interval: the tick once ran at 300 ms instead of 1 s, and the "60-second" poll at 300 s.

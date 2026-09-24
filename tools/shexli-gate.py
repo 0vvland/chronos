@@ -13,14 +13,7 @@ import json
 import sys
 
 # rule id -> { package-relative file: why this finding is not a real defect }
-WAIVED = {
-    # Both fire because the teardown lives on the indicator object: disable()
-    # calls this._indicator.onDestroy(), and shexli only follows helpers
-    # declared on the extension class itself. onDestroy() does disconnect the
-    # 'changed' handler and remove both timeout sources (extension.js).
-    'EGO-L-003': {'extension.js': 'released in Chronos.onDestroy(), called from disable()'},
-    'EGO-L-004': {'extension.js': 'released in Chronos.onDestroy(), called from disable()'},
-}
+WAIVED = {}
 
 
 def package_file(path):

@@ -549,7 +549,7 @@ const Chronos = GObject.registerClass(
     }
 
     // Full teardown, run from disable() before the actor itself is destroyed.
-    onDestroy () {
+    destroy () {
       // either source may have removed itself already
       if (this._timeout !== null) {
         GLib.Source.remove(this._timeout);
@@ -581,6 +581,7 @@ const Chronos = GObject.registerClass(
       }
       this._settings = null;
       this._extension = null;
+      super.destroy();
     }
 
     getLogFile () {
@@ -789,7 +790,6 @@ export default class ChronosExtension extends Extension {
   }
 
   disable () {
-    this._indicator.onDestroy();
     this._indicator.destroy();
     this._indicator = null;
   }
