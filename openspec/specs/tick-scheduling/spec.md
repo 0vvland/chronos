@@ -12,10 +12,17 @@ The extension SHALL perform second-by-second periodic work only while the tracke
 
 A start alarm could fire at the present moment when the start alarm is configured for the current weekday, the current local time falls inside the configured timeframe, the alarm has not already fired for the current paused period, and it has not been dismissed for the current day. These are the same conditions that decide whether a start notification is raised, so the extension never stands down while an alarm is pending and never keeps working after the last pending outcome is gone.
 
+While the daily reset is on, the extension SHALL additionally wake once at each local midnight to apply it. That wakeup is a single scheduled moment per day, not a recurring check, and SHALL NOT exist while the daily reset is off.
+
 #### Scenario: Paused with no start alarm configured
 
-- **WHEN** the tracker is paused and no start-alarm weekday is selected
+- **WHEN** the tracker is paused, no start-alarm weekday is selected, and the daily reset is off
 - **THEN** the extension performs no periodic work of any kind until the tracker is started again
+
+#### Scenario: Paused with only the daily reset on
+
+- **WHEN** the tracker is paused, no start-alarm weekday is selected, and the daily reset is on
+- **THEN** the extension wakes only at local midnight and performs no other periodic work
 
 #### Scenario: Paused outside the timeframe
 

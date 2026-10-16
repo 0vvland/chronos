@@ -18,59 +18,67 @@ msgstr ""
 "X-Poedit-SourceCharset: UTF-8\n"
 "X-Poedit-SearchPath-0: .\n"
 
-#: source/extension.js:87 source/extension.js:284 source/extension.js:740
+#: source/extension.js:89 source/extension.js:358 source/extension.js:826
 msgid "Start"
 msgstr "Продолжить"
 
-#: source/extension.js:91
+#: source/extension.js:93
 msgid "Restart"
 msgstr "Сброс"
 
-#: source/extension.js:95
+#: source/extension.js:97
 msgid "Preferences"
 msgstr "Настройки"
 
-#: source/extension.js:284
+#: source/extension.js:358
 msgid "Pause"
 msgstr "Пауза"
 
-#: source/extension.js:709
+#: source/extension.js:795
 msgid "Chronos Tracker"
 msgstr "Chronos Tracker"
 
-#: source/extension.js:725
+#: source/extension.js:811
 msgid "Time to take a break"
 msgstr "Пора сделать перерыв"
 
-#: source/extension.js:726 source/extension.js:744 source/extension.js:768
+#: source/extension.js:812 source/extension.js:830 source/extension.js:854
 msgid "Postpone..."
 msgstr "Отложить..."
 
-#: source/extension.js:738
+#: source/extension.js:824
 msgid "Time tracking is paused, time to start"
 msgstr "Трекер на паузе, пора начать"
 
-#: source/extension.js:757
+#: source/extension.js:843
 msgid "Not today"
 msgstr "Не сегодня"
 
-#: source/extension.js:766
+#: source/extension.js:852
 msgid "The tracked time target is reached"
 msgstr "Достигнута цель по учтенному времени"
 
-#: source/extension.js:773
+#: source/extension.js:859
 msgid "Select Tracked Time"
 msgstr "Выберите учтенное время"
 
-#: source/extension.js:777
+#: source/extension.js:863
 msgid "Dismiss"
 msgstr "Закрыть"
 
 #: source/prefs.js:70
+msgid ""
+"Daily reset: tracked time starts each day from the reset time, at midnight "
+"or on the first start of a new day"
+msgstr ""
+"Ежедневный сброс: учтённое время начинается каждый день со времени сброса — "
+"в полночь или при первом запуске в новый день"
+
+#: source/prefs.js:76
 msgid "Break alarm: a reminder after a stretch of uninterrupted tracking"
 msgstr "Оповещение о перерыве: напоминание после непрерывного отсчёта времени"
 
-#: source/prefs.js:71
+#: source/prefs.js:77
 msgid ""
 "Start tracking reminder: a nudge when tracking stays paused during working "
 "hours"
@@ -78,221 +86,229 @@ msgstr ""
 "Напоминание о запуске: подсказка, когда трекер остаётся на паузе в рабочее "
 "время"
 
-#: source/prefs.js:72
+#: source/prefs.js:78
 msgid "Goal alarm: a notification when tracked time reaches your target"
 msgstr "Оповещение о цели: уведомление, когда учтённое время достигнет цели"
 
-#: source/prefs.js:73
+#: source/prefs.js:79
 msgid "Postpone dialog shared by the alarms, to put a reminder off for a while"
 msgstr ""
 "Общее для оповещений окно откладывания, чтобы отложить напоминание на время"
 
-#: source/prefs.js:74
+#: source/prefs.js:80
 msgid "Log line limit: the log file can be capped to a number of lines"
 msgstr "Ограничение журнала: файл журнала можно ограничить числом строк"
 
-#: source/prefs.js:75
+#: source/prefs.js:81
 msgid "About page with the extension description and website link"
 msgstr "Страница «О расширении» с описанием и ссылкой на сайт"
 
-#: source/prefs.js:85
+#: source/prefs.js:91
 msgid "Time"
 msgstr "Время"
 
-#: source/prefs.js:96
+#: source/prefs.js:102
 #, fuzzy
 msgid "Adjust tracked time"
 msgstr "Изменить учтенное время"
 
-#: source/prefs.js:98
+#: source/prefs.js:104
 msgid "If tracker is not paused value can be diff with indicator"
 msgstr "Если трекер запущен может быть разница с индикатором"
 
-#: source/prefs.js:107
+#: source/prefs.js:113
 #, fuzzy
 msgid "Reset time"
 msgstr "Сбросить время"
 
-#: source/prefs.js:108
+#: source/prefs.js:114
 msgid "Time that will be set initially on reset"
 msgstr "Время на каторое происходит сброс"
 
-#: source/prefs.js:125
+#: source/prefs.js:131
 msgid "Appearance"
 msgstr "Внешний вид"
 
-#: source/prefs.js:132
+#: source/prefs.js:138
 msgid "Display"
 msgstr "Отображение"
 
-#: source/prefs.js:136
+#: source/prefs.js:142
 msgid "Show seconds"
 msgstr "Показывать секунды"
 
-#: source/prefs.js:145
+#: source/prefs.js:151
 #, fuzzy
 msgid "Colors"
 msgstr "Цвета"
 
-#: source/prefs.js:149
+#: source/prefs.js:155
 msgid "Normal state"
 msgstr "Нормальный"
 
-#: source/prefs.js:155
+#: source/prefs.js:161
 msgid "Paused state"
 msgstr "Пауза"
 
-#: source/prefs.js:175
+#: source/prefs.js:181
 msgid "Behavior"
 msgstr "Поведение"
 
-#: source/prefs.js:184
+#: source/prefs.js:190
 msgid "Pause while screen locked (and other inactive states)"
 msgstr "Пауза при блокеровке (и других случаях неактивности)"
 
-#: source/prefs.js:197
+#: source/prefs.js:203
 msgid "Log changes of time tracker state"
 msgstr "Вести лог изменений состояния трекера"
 
-#: source/prefs.js:208
+#: source/prefs.js:214
 msgid "Limit log file size"
 msgstr "Ограничить размер файла лога"
 
-#: source/prefs.js:209
+#: source/prefs.js:215
 msgid "Keep only the newest lines, trimmed when the extension starts"
 msgstr "Хранить только последние строки, лог обрезается при запуске расширения"
 
-#: source/prefs.js:216
+#: source/prefs.js:222
 msgid "Lines to keep"
 msgstr "Сколько строк хранить"
 
-#: source/prefs.js:241
+#: source/prefs.js:247
 msgid "Start tracker when restart timer"
 msgstr "Запускать трекер при сбросе"
 
-#: source/prefs.js:258
+#: source/prefs.js:259
+msgid "Reset tracked time daily"
+msgstr "Сбрасывать учтённое время ежедневно"
+
+#: source/prefs.js:260
+msgid "At midnight and on the first start of a new day"
+msgstr "В полночь и при первом запуске в новый день"
+
+#: source/prefs.js:286
 msgid "Alarms"
 msgstr "Оповещения"
 
-#: source/prefs.js:265
+#: source/prefs.js:293
 msgid "Take a break alarm"
 msgstr "Сделай перерыв оповещение"
 
-#: source/prefs.js:270
+#: source/prefs.js:298
 msgid "Enable break alarm"
 msgstr "Активировать оповещение о перерыве"
 
-#: source/prefs.js:271
+#: source/prefs.js:299
 msgid "Notify to take a break after a period of tracking"
 msgstr "Оповещать о необходимости сделать перерыв после интервала трекера"
 
-#: source/prefs.js:277
+#: source/prefs.js:305
 msgid "Interval"
 msgstr "Интервал"
 
-#: source/prefs.js:278
+#: source/prefs.js:306
 msgid "Time of non-pause tracking before alarm triggers"
 msgstr "Время активного трекинга до оповещения"
 
-#: source/prefs.js:297
+#: source/prefs.js:325
 msgid "Start tracking reminder"
 msgstr "Напоминание о запуске трекера"
 
-#: source/prefs.js:302
+#: source/prefs.js:330
 msgid "Enable start tracking reminder"
 msgstr "Включить напоминание о запуске"
 
-#: source/prefs.js:304
+#: source/prefs.js:332
 msgid "Notify when the tracker stays paused during working hours"
 msgstr "Оповещать, когда трекер остаётся на паузе в рабочее время"
 
-#: source/prefs.js:310
+#: source/prefs.js:338
 msgid "Days"
 msgstr "Дни"
 
-#: source/prefs.js:311
+#: source/prefs.js:339
 msgid "Weekdays the reminder is active on"
 msgstr "Дни недели, когда напоминание активно"
 
-#: source/prefs.js:317
+#: source/prefs.js:345
 msgid "From"
 msgstr "С"
 
-#: source/prefs.js:318
+#: source/prefs.js:346
 msgid "Time of day the reminder becomes active"
 msgstr "Время суток, с которого напоминание активно"
 
-#: source/prefs.js:328
+#: source/prefs.js:356
 msgid "To"
 msgstr "До"
 
-#: source/prefs.js:329
+#: source/prefs.js:357
 msgid "Time of day the reminder stops being active"
 msgstr "Время суток, после которого напоминание неактивно"
 
-#: source/prefs.js:339
+#: source/prefs.js:367
 msgid "Delay"
 msgstr "Задержка"
 
-#: source/prefs.js:340
+#: source/prefs.js:368
 msgid "Time of pause inside the timeframe before alarm triggers"
 msgstr "Время паузы внутри интервала до оповещения"
 
-#: source/prefs.js:350
+#: source/prefs.js:378
 msgid "The reminder is inactive"
 msgstr "Напоминание неактивно"
 
-#: source/prefs.js:351
+#: source/prefs.js:379
 msgid "\"To\" must be later than \"From\""
 msgstr "«До» должно быть позже «С»"
 
-#: source/prefs.js:390
+#: source/prefs.js:418
 msgid "Tracked time goal"
 msgstr "Цель по учтенному времени"
 
-#: source/prefs.js:396
+#: source/prefs.js:424
 msgid "Enable tracked time goal alarm"
 msgstr "Активировать оповещение о достижении цели"
 
-#: source/prefs.js:397
+#: source/prefs.js:425
 msgid "Notify when the tracked time reaches the target"
 msgstr "Оповещать, когда учтенное время достигнет цели"
 
-#: source/prefs.js:407
+#: source/prefs.js:435
 msgid "Target"
 msgstr "Цель"
 
-#: source/prefs.js:408
+#: source/prefs.js:436
 msgid "Tracked time at which the alarm triggers"
 msgstr "Учтенное время, при котором срабатывает оповещение"
 
-#: source/prefs.js:431
+#: source/prefs.js:459
 msgid "About"
 msgstr ""
 
-#: source/prefs.js:462
+#: source/prefs.js:490
 msgid "What's New"
 msgstr "Что нового"
 
-#: source/prefs.js:492
+#: source/prefs.js:520
 msgid "Chronos Time Tracker"
 msgstr ""
 
-#: source/prefs.js:496
+#: source/prefs.js:524
 msgid "Description"
 msgstr ""
 
-#: source/prefs.js:498
+#: source/prefs.js:526
 msgid ""
 "Time tracker tool. Track your time, customize display, log start/pause "
 "events."
 msgstr ""
 
-#: source/prefs.js:503
+#: source/prefs.js:531
 msgid "Website"
 msgstr ""
 
-#: source/prefs.js:508
+#: source/prefs.js:536
 msgid "Open"
 msgstr ""
 

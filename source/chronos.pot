@@ -16,275 +16,289 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: source/extension.js:87 source/extension.js:284 source/extension.js:740
+#: source/extension.js:89 source/extension.js:358 source/extension.js:826
 msgid "Start"
 msgstr ""
 
-#: source/extension.js:91
+#: source/extension.js:93
 msgid "Restart"
 msgstr ""
 
-#: source/extension.js:95
+#: source/extension.js:97
 msgid "Preferences"
 msgstr ""
 
-#: source/extension.js:284
+#: source/extension.js:358
 msgid "Pause"
 msgstr ""
 
-#: source/extension.js:709
+#: source/extension.js:795
 msgid "Chronos Tracker"
 msgstr ""
 
-#: source/extension.js:725
+#: source/extension.js:811
 msgid "Time to take a break"
 msgstr ""
 
-#: source/extension.js:726 source/extension.js:744 source/extension.js:768
+#: source/extension.js:812 source/extension.js:830 source/extension.js:854
 msgid "Postpone..."
 msgstr ""
 
-#: source/extension.js:738
+#: source/extension.js:824
 msgid "Time tracking is paused, time to start"
 msgstr ""
 
-#: source/extension.js:757
+#: source/extension.js:843
 msgid "Not today"
 msgstr ""
 
-#: source/extension.js:766
+#: source/extension.js:852
 msgid "The tracked time target is reached"
 msgstr ""
 
-#: source/extension.js:773
+#: source/extension.js:859
 msgid "Select Tracked Time"
 msgstr ""
 
-#: source/extension.js:777
+#: source/extension.js:863
 msgid "Dismiss"
 msgstr ""
 
 #: source/prefs.js:70
+msgid ""
+"Daily reset: tracked time starts each day from the reset time, at midnight "
+"or on the first start of a new day"
+msgstr ""
+
+#: source/prefs.js:76
 msgid "Break alarm: a reminder after a stretch of uninterrupted tracking"
 msgstr ""
 
-#: source/prefs.js:71
+#: source/prefs.js:77
 msgid ""
 "Start tracking reminder: a nudge when tracking stays paused during working "
 "hours"
 msgstr ""
 
-#: source/prefs.js:72
+#: source/prefs.js:78
 msgid "Goal alarm: a notification when tracked time reaches your target"
 msgstr ""
 
-#: source/prefs.js:73
+#: source/prefs.js:79
 msgid "Postpone dialog shared by the alarms, to put a reminder off for a while"
 msgstr ""
 
-#: source/prefs.js:74
+#: source/prefs.js:80
 msgid "Log line limit: the log file can be capped to a number of lines"
 msgstr ""
 
-#: source/prefs.js:75
+#: source/prefs.js:81
 msgid "About page with the extension description and website link"
 msgstr ""
 
-#: source/prefs.js:85
+#: source/prefs.js:91
 msgid "Time"
 msgstr ""
 
-#: source/prefs.js:96
+#: source/prefs.js:102
 msgid "Adjust tracked time"
 msgstr ""
 
-#: source/prefs.js:98
+#: source/prefs.js:104
 msgid "If tracker is not paused value can be diff with indicator"
 msgstr ""
 
-#: source/prefs.js:107
+#: source/prefs.js:113
 msgid "Reset time"
 msgstr ""
 
-#: source/prefs.js:108
+#: source/prefs.js:114
 msgid "Time that will be set initially on reset"
 msgstr ""
 
-#: source/prefs.js:125
+#: source/prefs.js:131
 msgid "Appearance"
 msgstr ""
 
-#: source/prefs.js:132
+#: source/prefs.js:138
 msgid "Display"
 msgstr ""
 
-#: source/prefs.js:136
+#: source/prefs.js:142
 msgid "Show seconds"
 msgstr ""
 
-#: source/prefs.js:145
+#: source/prefs.js:151
 msgid "Colors"
 msgstr ""
 
-#: source/prefs.js:149
+#: source/prefs.js:155
 msgid "Normal state"
 msgstr ""
 
-#: source/prefs.js:155
+#: source/prefs.js:161
 msgid "Paused state"
 msgstr ""
 
-#: source/prefs.js:175
+#: source/prefs.js:181
 msgid "Behavior"
 msgstr ""
 
-#: source/prefs.js:184
+#: source/prefs.js:190
 msgid "Pause while screen locked (and other inactive states)"
 msgstr ""
 
-#: source/prefs.js:197
+#: source/prefs.js:203
 msgid "Log changes of time tracker state"
 msgstr ""
 
-#: source/prefs.js:208
+#: source/prefs.js:214
 msgid "Limit log file size"
 msgstr ""
 
-#: source/prefs.js:209
+#: source/prefs.js:215
 msgid "Keep only the newest lines, trimmed when the extension starts"
 msgstr ""
 
-#: source/prefs.js:216
+#: source/prefs.js:222
 msgid "Lines to keep"
 msgstr ""
 
-#: source/prefs.js:241
+#: source/prefs.js:247
 msgid "Start tracker when restart timer"
 msgstr ""
 
-#: source/prefs.js:258
+#: source/prefs.js:259
+msgid "Reset tracked time daily"
+msgstr ""
+
+#: source/prefs.js:260
+msgid "At midnight and on the first start of a new day"
+msgstr ""
+
+#: source/prefs.js:286
 msgid "Alarms"
 msgstr ""
 
-#: source/prefs.js:265
+#: source/prefs.js:293
 msgid "Take a break alarm"
 msgstr ""
 
-#: source/prefs.js:270
+#: source/prefs.js:298
 msgid "Enable break alarm"
 msgstr ""
 
-#: source/prefs.js:271
+#: source/prefs.js:299
 msgid "Notify to take a break after a period of tracking"
 msgstr ""
 
-#: source/prefs.js:277
+#: source/prefs.js:305
 msgid "Interval"
 msgstr ""
 
-#: source/prefs.js:278
+#: source/prefs.js:306
 msgid "Time of non-pause tracking before alarm triggers"
 msgstr ""
 
-#: source/prefs.js:297
+#: source/prefs.js:325
 msgid "Start tracking reminder"
 msgstr ""
 
-#: source/prefs.js:302
+#: source/prefs.js:330
 msgid "Enable start tracking reminder"
 msgstr ""
 
-#: source/prefs.js:304
+#: source/prefs.js:332
 msgid "Notify when the tracker stays paused during working hours"
 msgstr ""
 
-#: source/prefs.js:310
+#: source/prefs.js:338
 msgid "Days"
 msgstr ""
 
-#: source/prefs.js:311
+#: source/prefs.js:339
 msgid "Weekdays the reminder is active on"
 msgstr ""
 
-#: source/prefs.js:317
+#: source/prefs.js:345
 msgid "From"
 msgstr ""
 
-#: source/prefs.js:318
+#: source/prefs.js:346
 msgid "Time of day the reminder becomes active"
 msgstr ""
 
-#: source/prefs.js:328
+#: source/prefs.js:356
 msgid "To"
 msgstr ""
 
-#: source/prefs.js:329
+#: source/prefs.js:357
 msgid "Time of day the reminder stops being active"
 msgstr ""
 
-#: source/prefs.js:339
+#: source/prefs.js:367
 msgid "Delay"
 msgstr ""
 
-#: source/prefs.js:340
+#: source/prefs.js:368
 msgid "Time of pause inside the timeframe before alarm triggers"
 msgstr ""
 
-#: source/prefs.js:350
+#: source/prefs.js:378
 msgid "The reminder is inactive"
 msgstr ""
 
-#: source/prefs.js:351
+#: source/prefs.js:379
 msgid "\"To\" must be later than \"From\""
 msgstr ""
 
-#: source/prefs.js:390
+#: source/prefs.js:418
 msgid "Tracked time goal"
 msgstr ""
 
-#: source/prefs.js:396
+#: source/prefs.js:424
 msgid "Enable tracked time goal alarm"
 msgstr ""
 
-#: source/prefs.js:397
+#: source/prefs.js:425
 msgid "Notify when the tracked time reaches the target"
 msgstr ""
 
-#: source/prefs.js:407
+#: source/prefs.js:435
 msgid "Target"
 msgstr ""
 
-#: source/prefs.js:408
+#: source/prefs.js:436
 msgid "Tracked time at which the alarm triggers"
 msgstr ""
 
-#: source/prefs.js:431
+#: source/prefs.js:459
 msgid "About"
 msgstr ""
 
-#: source/prefs.js:462
+#: source/prefs.js:490
 msgid "What's New"
 msgstr ""
 
-#: source/prefs.js:492
+#: source/prefs.js:520
 msgid "Chronos Time Tracker"
 msgstr ""
 
-#: source/prefs.js:496
+#: source/prefs.js:524
 msgid "Description"
 msgstr ""
 
-#: source/prefs.js:498
+#: source/prefs.js:526
 msgid ""
 "Time tracker tool. Track your time, customize display, log start/pause "
 "events."
 msgstr ""
 
-#: source/prefs.js:503
+#: source/prefs.js:531
 msgid "Website"
 msgstr ""
 
-#: source/prefs.js:508
+#: source/prefs.js:536
 msgid "Open"
 msgstr ""
 

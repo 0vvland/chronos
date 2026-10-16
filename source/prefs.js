@@ -65,6 +65,12 @@ const bindSentinelSwitch = ({
 
 const CHANGELOG = () => [
   {
+    version: 19,
+    changes: [
+      _('Daily reset: tracked time starts each day from the reset time, at midnight or on the first start of a new day'),
+    ],
+  },
+  {
     version: 16,
     changes: [
       _('Break alarm: a reminder after a stretch of uninterrupted tracking'),
@@ -245,6 +251,28 @@ const BehaviorPage = GObject.registerClass(
         Gio.SettingsBindFlags.DEFAULT);
 
       groupStartOnReset.add(switchStartOnReset);
+
+      // 'state-daily-reset-day' holds the YYYYMMDD of the last reset, 0 = off.
+      // Not bindSentinelSwitch(): there is no value row, and "on" is always
+      // today rather than a remembered value.
+      const switchDailyReset = new Adw.SwitchRow({
+        title: _('Reset tracked time daily'),
+        subtitle: _('At midnight and on the first start of a new day'),
+      });
+      switchDailyReset.active =
+        this.settings.get_int('state-daily-reset-day') !== 0;
+      switchDailyReset.connect('notify::active', () => {
+        // stamped with today, so switching on never resets today's time;
+        // the extension's getLocalDay(), which prefs cannot import
+        const now = new Date();
+        const today = now.getFullYear() * 10000 +
+          (now.getMonth() + 1) * 100 +
+          now.getDate();
+        this.settings.set_int('state-daily-reset-day',
+          switchDailyReset.active ? today : 0);
+      });
+
+      groupStartOnReset.add(switchDailyReset);
       this.add(groupStartOnReset);
     }
   },

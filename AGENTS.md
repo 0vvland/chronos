@@ -19,6 +19,12 @@ the value row while off. A fourth such preference wires itself up through the
 same helper rather than copying the shape again. The goal alarm is the
 exception and binds a boolean key of its own; see the note under the key table.
 
+`state-daily-reset-day` is a sentinel key too (`0` = off) but is deliberately
+wired *without* `bindSentinelSwitch()`: it has no value row, and its "on" value
+is always today's `YYYYMMDD`, never a remembered one. Its switch is a plain
+`Adw.SwitchRow` with a seed and a `notify::active` handler — don't fold it into
+the helper.
+
 The About page carries a *What's New* changelog between the logo and the
 description, rendered from the `CHANGELOG` thunk near the top of `prefs.js` into
 one markup label inside a bounded `Gtk.ScrolledWindow`. **A version bump means
@@ -50,6 +56,7 @@ Reusable components in `source/components/`: `TimeRow` (HH:MM spin buttons), `Co
 | `pref-start-alarm-to` | int | 64800 | Timeframe closing; `<= from` = inactive |
 | `pref-start-alarm-delay` | int | 900 | Paused seconds inside timeframe before alerting |
 | `state-start-alarm-dismissed` | int | 0 | Local day dismissed for, `YYYYMMDD`; 0 = never |
+| `state-daily-reset-day` | int | 0 | Local day of the last automatic reset, `YYYYMMDD`; 0 = daily reset off |
 | `pref-goal-alarm-enabled` | bool | false | Goal alarm on/off — an explicit flag, not a sentinel |
 | `pref-goal-alarm-time` | int | 28800 | Tracked-time target in seconds; 0 and negative are valid targets |
 

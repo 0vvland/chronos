@@ -59,6 +59,8 @@ const Chronos = GObject.registerClass(
       // null - unless the matching periodic source is currently armed
       this._timeout = null;
       this._pollTimeout = null;
+      // null - unless the one-shot daily reset wakeup is armed
+      this._midnightTimeout = null;
       // [0]=active, [1]=paused; null until readCachedSettings() first runs
       this._indicatorColors = null;
       this._extension = extension;
@@ -104,6 +106,7 @@ const Chronos = GObject.registerClass(
       this._pendingLog = [];
       this.truncateLog(this.flushLog.bind(this));
 
+      const instant = this.takeInstant();
       if (!this._settings.get_boolean('state-paused')) {
         // not paused on destroy
         const storedStartTime = this._settings.get_uint(
@@ -111,6 +114,10 @@ const Chronos = GObject.registerClass(
         if (storedStartTime) {
           this._startTime = storedStartTime;
           this._settings.set_uint('state-pause-start-time', 0);
+          // between the backdating and the flush: the rollover has to see the
+          // backdated start to split the recovered stretch at midnight, and
+          // the flush below then counts the rest into the new day
+          this.rollover(instant);
           this.storeCountedTime();
           this.logging('collect inactive time');
           // recovery has already set _startTime, so onResume() would return at
@@ -120,6 +127,8 @@ const Chronos = GObject.registerClass(
           this.onResume();
         }
       }
+      // a no-op when the recovery branch above has already rolled the day over
+      this.rollover(instant);
 
       // seeded after the recovered time has been folded in, so the first tick
       // sees no step - and so an enable above the target starts out fired
@@ -127,6 +136,7 @@ const Chronos = GObject.registerClass(
       this._goalFired = this._lastGoalTracked >= this.getGoalTarget();
 
       this._ensureTick();
+      this._ensureMidnightTimer();
 
       // the tick may not be running at all, so the label cannot wait a second
       // for its first value
@@ -135,7 +145,7 @@ const Chronos = GObject.registerClass(
     }
 
     // The GSettings values worth holding rather than re-reading: the two
-    // indicator colors, and the two keys a one-second pass would otherwise go
+    // indicator colors, and the keys a one-second pass would otherwise go
     // back to the backend for on every tick. Refreshed from the 'changed'
     // signal, never polled. 'state-tracked-time' deliberately stays a live
     // read - the preferences page and the extension both write it.
@@ -154,6 +164,7 @@ const Chronos = GObject.registerClass(
       this._showSeconds = this._settings.get_boolean('pref-show-seconds');
       this._goalAlarmEnabled = this._settings
         .get_boolean('pref-goal-alarm-enabled');
+      this._dailyResetDay = this._settings.get_int('state-daily-reset-day');
       return colorsChanged;
     }
 
@@ -214,6 +225,65 @@ const Chronos = GObject.registerClass(
         });
     }
 
+    // The daily reset's one wakeup a day, armed only while the option is on.
+    // One-shot and re-armed from its own callback rather than periodic: the
+    // interval is measured on the monotonic clock, so it is recomputed from
+    // the wall clock every time. The callback re-derives the day instead of
+    // trusting the armed moment - a timer that fires early finds the old day,
+    // does nothing and re-arms for the second or so that is left.
+    _ensureMidnightTimer () {
+      if (this._midnightTimeout !== null || this._dailyResetDay === 0) {
+        return;
+      }
+      const now = new Date();
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(),
+        now.getDate() + 1);
+      const seconds = Math.max(1,
+        Math.ceil((nextMidnight.getTime() - now.getTime()) / 1000));
+      this._midnightTimeout = GLib.timeout_add_seconds(GLib.PRIORITY_LOW,
+        seconds, () => {
+          this._midnightTimeout = null;
+          // a pass of its own, so it takes its own instant
+          this.rollover(this.takeInstant());
+          this._ensureMidnightTimer();
+          return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    // Resets the tracked time to the reset time once per local day while the
+    // daily reset is on; a no-op on the day already stamped. The running state
+    // is left alone: a counting tracker is flushed up to the boundary and
+    // keeps counting from it into the new day, a paused one stays paused.
+    //
+    // The split is clamped to _startTime so a tracker started after midnight
+    // on a stale stamp is never flushed backwards. The counter moves under the
+    // caller's pass here, so the instant's reading is retaken from its own
+    // moment rather than from a new clock read.
+    rollover (instant) {
+      const today = this.getLocalDay(instant.date);
+      if (this._dailyResetDay === 0 || this._dailyResetDay === today) {
+        return;
+      }
+      const date = instant.date;
+      const midnight = getUintTime(new Date(date.getFullYear(),
+        date.getMonth(), date.getDate()).getTime());
+      const split = this.isPaused
+        ? midnight
+        : Math.max(midnight, this._startTime);
+      this.storeCountedTime(split);
+      // the closing total of the day that ended, not a live reading that
+      // would include the new day's time
+      this.logging('auto reset', this.getTrackedSeconds(split));
+      this._settings.set_int('state-tracked-time',
+        this._settings.get_int('pref-reset-time'));
+      // set here as well as from the 'changed' signal, so a second call in
+      // the same pass is a no-op whenever the signal lands
+      this._dailyResetDay = today;
+      this._settings.set_int('state-daily-reset-day', today);
+      instant.trackedSeconds = this.getTrackedSeconds(instant.uintTime);
+      this.refreshIndicatorLabel(instant.trackedSeconds);
+    }
+
     // One pass, one instant. Everything time-derived a pass needs comes from
     // here, so the indicator, the goal alarm and the two deadlines cannot each
     // be looking at a different "now". The record is a local value that dies
@@ -239,6 +309,10 @@ const Chronos = GObject.registerClass(
 
     onTick () {
       const instant = this.takeInstant();
+
+      // catches the day boundary the midnight timer can miss, e.g. a suspend
+      // without a lock, after which the monotonic timer fires late
+      this.rollover(instant);
 
       // every 2 collected minutes store them - only while counting, since the
       // tick also runs through a paused start-alarm window and _startTime is
@@ -366,6 +440,7 @@ const Chronos = GObject.registerClass(
     //   | break alarm        | _breakDeadline nulled in onPause, armed on      |
     //   |                    | onResume                                        |
     //   | goal alarm         | driven by tracked time, frozen while paused     |
+    //   | daily reset        | woken at midnight by its own one-shot timer     |
     //
     // A consumer added to the tick body that needs a wake-up outside those
     // terms has to add its own here, or it will work while tracking and
@@ -546,6 +621,11 @@ const Chronos = GObject.registerClass(
       // a no-op whenever the right source is already armed, which is what the
       // extension's own two-minute 'state-tracked-time' write re-enters here
       this._ensureTick();
+      if (this._dailyResetDay === 0 && this._midnightTimeout !== null) {
+        GLib.Source.remove(this._midnightTimeout);
+        this._midnightTimeout = null;
+      }
+      this._ensureMidnightTimer();
     }
 
     // Full teardown, run from disable() before the actor itself is destroyed.
@@ -558,6 +638,10 @@ const Chronos = GObject.registerClass(
       if (this._pollTimeout !== null) {
         GLib.Source.remove(this._pollTimeout);
         this._pollTimeout = null;
+      }
+      if (this._midnightTimeout !== null) {
+        GLib.Source.remove(this._midnightTimeout);
+        this._midnightTimeout = null;
       }
       this.storeCountedTime();
       this._settings.set_boolean('state-paused', this.isPaused);
@@ -663,8 +747,9 @@ const Chronos = GObject.registerClass(
     // An entry logged while truncateLog() still has the file in flight is
     // queued rather than appended: the rewrite would throw the append away.
     // The line is built when the event happens, so queuing never moves an
-    // entry's timestamp or its tracked time.
-    logging (event) {
+    // entry's timestamp or its tracked time. `trackedSeconds` pins the reading
+    // when the live one would be wrong, e.g. a day's closing total.
+    logging (event, trackedSeconds) {
       if (!this._settings.get_boolean('pref-log-change-state')) {
         return;
       }
@@ -672,7 +757,8 @@ const Chronos = GObject.registerClass(
       // microseconds and renders the offset as '+03' rather than '+03:00'
       const isoDate = GLib.DateTime.new_now_local()
         .format('%Y-%m-%dT%H:%M:%S%:z');
-      const line = `${isoDate}: [${event}] ${this.getTrackedTime()}\n`;
+      const line =
+        `${isoDate}: [${event}] ${this.getTrackedTime(trackedSeconds)}\n`;
 
       if (this._pendingLog !== null) {
         this._pendingLog.push(line);

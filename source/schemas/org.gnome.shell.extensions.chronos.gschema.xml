@@ -98,5 +98,10 @@
             <summary>Start alarm dismissed day</summary>
             <description>Local calendar day the start alarm was dismissed for, as YYYYMMDD, 0 means never dismissed</description>
         </key>
+        <key name="state-daily-reset-day" type="i">
+            <default>0</default>
+            <summary>Daily reset day</summary>
+            <description>Local calendar day the tracked time was last reset to the reset time automatically, as YYYYMMDD, 0 means the daily reset is off</description>
+        </key>
     </schema>
 </schemalist>
